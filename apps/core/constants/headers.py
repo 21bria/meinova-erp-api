@@ -1,0 +1,3 @@
+REQUEST_ID_HEADER = "X-Request-ID"
+
+TENANT_HEADER = "X-Tenant"

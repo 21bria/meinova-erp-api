@@ -1,0 +1,267 @@
+HR Module Structure
+
+HR → References
+
+Reference HR digunakan sebagai master lookup untuk seluruh modul Employee, Recruitment, Attendance, Payroll, Performance, Competency, dan Separation.
+
+Personal References
+
+* Gender
+* Religion
+* Nationality
+* Marital Status
+* Blood Type
+
+Education References
+
+* Education Level
+* Degree
+* Study Field
+
+Employment References
+
+* Employment Type
+* Employment Status
+* Employee Group
+* Contract Type
+* Probation Type
+* Work Location Type
+* Job Category
+* Job Family
+* Job Level
+* Grade
+
+Attendance & Leave References
+
+* Shift Group
+* Leave Type
+* Leave Reason
+* Attendance Status
+* Overtime Type
+
+Skills & Qualification References
+
+* Skill
+* Skill Level
+* Certificate Type
+* License Type
+* Language
+* Language Proficiency
+
+Family & Emergency References
+
+* Family Relationship
+* Emergency Relationship
+
+Recruitment References
+
+* Recruitment Source
+* Candidate Status
+* Interview Type
+* Rejection Reason
+
+Performance References
+
+* KPI Category
+* KPI Period
+* KPI Weight Type
+* Performance Rating
+* Performance Cycle
+* Performance Template
+
+Competency References
+
+* Competency Category
+* Competency
+* Competency Level
+
+Employee Separation References
+
+* Termination Reason
+* Exit Clearance Status
+
+⸻
+
+HR Application Modules
+
+1. HR Master
+
+Master HR menyimpan struktur dan konfigurasi utama organisasi serta ketenagakerjaan.
+
+* Organization Unit
+* Division
+* Department
+* Section
+* Team
+* Job Position
+* Job Title
+* Job Level
+* Grade
+* Employment Type
+* Employment Status
+* Employee Group
+* Shift
+* Work Schedule
+* Calendar
+* Holiday
+* Cost Center
+* Work Location
+* Site
+
+2. Employee Management
+
+Modul utama untuk menyimpan seluruh data karyawan.
+
+* Employee
+* Employee Profile
+* Employment Information
+* Organization Assignment
+* Address
+* Education History
+* Work Experience
+* Family
+* Emergency Contact
+* Bank Account
+* Document
+* Skill
+* Language
+* Certificate
+* License
+* Employee Contract
+* Salary History
+* Supervisor Assignment
+* Employee Transfer
+* Employee Promotion
+* Employee Separation
+
+3. Attendance & Time Management
+
+Mengelola waktu kerja dan kehadiran karyawan.
+
+* Attendance
+* Clock In / Clock Out
+* Shift Assignment
+* Work Schedule
+* Roster
+* Leave Request
+* Leave Balance
+* Overtime Request
+* Business Trip
+* Timesheet
+* Attendance Correction
+* Holiday Calendar
+
+4. Payroll
+
+Mengelola komponen penghasilan, potongan, proses payroll, dan payslip.
+
+* Salary Component
+* Allowance
+* Deduction
+* Payroll Group
+* Payroll Period
+* Payroll Input
+* Payroll Process
+* Payroll Result
+* Payslip
+* Tax Configuration
+* BPJS Configuration
+* Employee Payroll Profile
+* Bank Transfer
+* Payroll Journal
+* Payroll Approval
+
+5. Recruitment
+
+Mengelola proses penerimaan karyawan baru.
+
+* Manpower Request
+* Job Vacancy
+* Candidate
+* Candidate Application
+* Screening
+* Interview
+* Assessment
+* Job Offer
+* Hiring Approval
+* Onboarding
+
+6. Performance Management
+
+Mengelola target, KPI, penilaian, dan evaluasi kinerja.
+
+* KPI
+* KPI Assignment
+* KPI Target
+* Performance Cycle
+* Performance Template
+* Performance Review
+* Performance Rating
+* Performance Score
+* Goal Setting
+* Appraisal
+* Development Plan
+* 360 Feedback
+
+7. Competency Management
+
+Mengelola kompetensi yang dibutuhkan dan dimiliki karyawan.
+
+* Competency Category
+* Competency
+* Competency Level
+* Position Competency
+* Employee Competency
+* Competency Assessment
+* Competency Gap
+* Development Recommendation
+
+8. Learning & Development
+
+Mengelola pelatihan dan pengembangan karyawan.
+
+* Training Category
+* Training Program
+* Training Schedule
+* Training Participant
+* Training Attendance
+* Training Result
+* Certificate
+* Learning History
+* Development Plan
+
+9. Employee Separation
+
+Mengelola proses akhir hubungan kerja.
+
+* Resignation
+* Termination
+* Retirement
+* Exit Interview
+* Exit Clearance
+* Asset Return
+* Final Payroll
+* Employee Offboarding
+
+Urutan Implementasi :
+1. HR References
+2. HR Master
+3. Employee Management
+4. Attendance & Time Management
+5. Payroll
+6. Recruitment
+7. Performance Management
+8. Competency Management
+9. Learning & Development
+10. Employee Separation
+
+Alur dependensinya:
+HR References
+      ↓
+HR Master
+      ↓
+Employee
+      ↓
+Attendance
+      ↓
+Payroll

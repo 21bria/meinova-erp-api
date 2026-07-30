@@ -1,0 +1,39 @@
+from apps.framework.lookup import (
+    BaseLookup,
+    register_lookup,
+)
+
+from apps.administration.models import (
+    ShiftGroup,
+    Shift,
+    WorkSchedule,
+)
+
+
+class BaseHRAttendanceLookup(BaseLookup):
+    search_fields = [
+        "code",
+        "name",
+    ]
+
+    ordering = [
+        "name",
+    ]
+
+
+@register_lookup
+class ShiftGroupLookup(BaseHRAttendanceLookup):
+    name = "shift-groups"
+    model = ShiftGroup
+
+
+@register_lookup
+class ShiftLookup(BaseHRAttendanceLookup):
+    name = "shifts"
+    model = Shift
+
+
+@register_lookup
+class WorkScheduleLookup(BaseHRAttendanceLookup):
+    name = "work-schedules"
+    model = WorkSchedule

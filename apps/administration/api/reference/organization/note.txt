@@ -1,0 +1,50 @@
+SiteType = jenis area/site operasional.
+
+Contoh:
+Mine Site
+Office Site
+Workshop
+Warehouse
+Port / Jetty
+Camp
+Plant
+
+Di sini Site Type hanya mengklasifikasikan site.
+
+Contoh master SiteType:
+
+
+
+Biasanya dipakai untuk master Site.
+WorkLocationType = jenis lokasi kerja karyawan / attendance / payroll.
+
+Contoh:
+Head Office
+Site Based
+Remote
+Roster
+Hybrid
+Branch Office
+
+PT Meinova Mining Indonesia
+│
+├── Branch : Jakarta Head Office
+│   └── Site : Head Office
+│       └── Site Type : Office
+│
+├── Branch : North Maluku Operation
+│   ├── Site : Gebe Mine
+│   │   └── Site Type : Mine Site
+│   │
+│   ├── Site : Jetty Gebe
+│   │   └── Site Type : Port / Jetty
+│   │
+│   ├── Site : Main Warehouse
+│   │   └── Site Type : Warehouse
+│   │
+│   └── Site : Workshop A
+│       └── Site Type : Workshop
+│
+└── Branch : Konawe Operation
+    └── Site : Konawe Camp
+        └── Site Type : Camp

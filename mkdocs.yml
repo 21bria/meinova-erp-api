@@ -1,0 +1,130 @@
+# mkdocs serve -a 127.0.0.1:8001
+# Untuk diakses dari perangkat lain dalam jaringan:
+# mkdocs serve -a 0.0.0.0:8001
+
+site_name: Meinova Knowledge Base
+site_description: Intelligent Digital Workspace ERP Blueprint
+site_author: Development Team
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+  palette:
+    - scheme: default
+      primary: slate
+      accent: blue
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: slate
+      accent: blue
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Home: index.md
+
+  - Overview:
+      - Vision: 00-overview/Vision.md
+      - Version: 00-overview/Version.md
+      - Product Strategy: 00-overview/Product-Strategy.md
+      - Business Goals: 00-overview/Business-Goals.md
+      - Roadmap: 00-overview/Roadmap.md
+      - Milestones: 00-overview/Milestones.md
+      - Changelog: 00-overview/Changelog.md
+      - FAQ: 00-overview/FAQ.md
+
+  - Architecture:
+      - System Architecture: 01-architecture/System-Architecture.md
+      - Multi Tenant: 01-architecture/Multi-Tenant.md
+      - Authentication: 01-architecture/Authentication.md
+      - Authorization: 01-architecture/Authorization.md
+      - Dashboard Engine: 01-architecture/Dashboard-Engine.md
+      - Widget Engine: 01-architecture/Widget-Engine.md
+      - Workflow Engine: 01-architecture/Workflow-Engine.md
+      - Notification Engine: 01-architecture/Notification-Engine.md
+      - Task Engine: 01-architecture/Task-Engine.md
+      - Search Engine: 01-architecture/Search-Engine.md
+      - AI Engine: 01-architecture/AI-Engine.md
+
+  - Framework:
+      - Overview: 02-framework/Overview.md
+      - Folder Structure: 02-framework/Folder-Structure.md
+      - Generator: 02-framework/Generator.md
+      - Schema: 02-framework/Schema.md
+      - Lookup: 02-framework/Lookup.md
+      - Base Models: 02-framework/Base-Models.md
+      - Base Services: 02-framework/Base-Services.md
+      - Base ViewSets: 02-framework/Base-ViewSets.md
+      - Permissions: 02-framework/Permissions.md
+      - Middleware: 02-framework/Middleware.md
+      - Validation: 02-framework/Validation.md
+      - Error Handling: 02-framework/Error-Handling.md
+
+  - Modules:
+      - Organization: 03-modules/organization/Overview.md
+      - Human Resources:
+          - Overview: 03-modules/hr/Overview.md
+          - Employees: 03-modules/hr/Employees.md
+          - Attendance: 03-modules/hr/Attendance.md
+      - Payroll: 03-modules/payroll/Overview.md
+      - Finance: 03-modules/finance/Overview.md
+      - SCM: 03-modules/scm/Overview.md
+      - Mining: 03-modules/mining/Overview.md
+      - Safety: 03-modules/safety/Overview.md
+      - Analytics: 03-modules/analytics/Overview.md
+
+  - UI UX:
+      - Workspace: 04-ui-ux/Workspace.md
+      - Dashboard: 04-ui-ux/Dashboard.md
+      - Design System: 04-ui-ux/Design-System.md
+      - Components: 04-ui-ux/Components.md
+
+  - API:
+      - Standards: 05-api/Standards.md
+      - Error Response: 05-api/Error-Response.md
+      - Pagination: 05-api/Pagination.md
+      - Filtering: 05-api/Filtering.md
+
+  - Database:
+      - Database Design: 06-database/Database-Design.md
+      - Naming Convention: 06-database/Naming-Convention.md
+      - ERD: 06-database/ERD.md
+      - Migration: 06-database/Migration.md
+
+  - Deployment:
+      - Local: 07-deployment/Local.md
+      - Docker: 07-deployment/Docker.md
+      - CI CD: 07-deployment/CI-CD.md
+      - Production: 07-deployment/Production.md
+
+  - Development:
+      - Coding Standards: 08-development/Coding-Standards.md
+      - Git Workflow: 08-development/Git-Workflow.md
+      - Testing: 08-development/Testing.md
+      - Checklist: 08-development/Checklist.md
