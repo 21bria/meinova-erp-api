@@ -34,6 +34,7 @@ from django.db.models import Q
 
 from apps.accounts.permissions import view_permission_for
 from apps.accounts.scoping import DataScopeService
+from apps.framework.charts import dataset as chart_dataset, point as chart_point
 from apps.framework.periods import trend_buckets
 from apps.hr.api.attendance.schedule import (
     holidays_bulk,
@@ -1242,10 +1243,21 @@ class HRPeriodSummaryPresenter:
 
         return {
             "categories": categories,
+            # `code` di samping `label`: legendanya diterjemahkan
+            # frontend dari kode metrik, bukan dari teksnya.
             "datasets": [
-                {"label": "Hadir", "data": present, "color": "success"},
-                {"label": "Telat", "data": late, "color": "warning"},
-                {"label": "Tidak Hadir", "data": absent, "color": "danger"},
+                chart_dataset(
+                    code=Metric.PRESENT, label="Hadir",
+                    data=present, color="success",
+                ),
+                chart_dataset(
+                    code=Metric.LATE, label="Telat",
+                    data=late, color="warning",
+                ),
+                chart_dataset(
+                    code=Metric.ABSENT, label="Tidak Hadir",
+                    data=absent, color="danger",
+                ),
             ],
         }
 
@@ -1277,7 +1289,10 @@ class HRPeriodSummaryPresenter:
             if not value:
                 continue
 
-            series.append({"label": label, "value": value})
+            # Irisan donut ini **kelompok laporan**, bukan nama tipe
+            # cuti milik tenant — jadi ia punya kode, dan yang mentah
+            # (`leave_by_type`) tidak pernah diberi kode.
+            series.append(chart_point(code=metric, label=label, value=value))
 
         total = sum(item["value"] for item in series)
 
@@ -1316,9 +1331,18 @@ class HRPeriodSummaryPresenter:
         return {
             "categories": categories,
             "datasets": [
-                {"label": "Regular OT", "data": regular, "color": "primary"},
-                {"label": "Off OT", "data": off, "color": "warning"},
-                {"label": "Holiday OT", "data": holiday, "color": "danger"},
+                chart_dataset(
+                    code=Metric.OT_REGULAR, label="Regular OT",
+                    data=regular, color="primary",
+                ),
+                chart_dataset(
+                    code=Metric.OT_OFF, label="Off OT",
+                    data=off, color="warning",
+                ),
+                chart_dataset(
+                    code=Metric.OT_HOLIDAY, label="Holiday OT",
+                    data=holiday, color="danger",
+                ),
             ],
         }
 
@@ -1363,8 +1387,14 @@ class HRPeriodSummaryPresenter:
         return {
             "categories": categories,
             "datasets": [
-                {"label": "Present", "data": present, "color": "success"},
-                {"label": "Absent", "data": absent, "color": "danger"},
+                chart_dataset(
+                    code=Metric.PRESENT, label="Present",
+                    data=present, color="success",
+                ),
+                chart_dataset(
+                    code=Metric.ABSENT, label="Absent",
+                    data=absent, color="danger",
+                ),
             ],
         }
 

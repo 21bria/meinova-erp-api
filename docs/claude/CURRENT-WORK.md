@@ -8,6 +8,15 @@ dokumen domain — berkas ini hanya menunjuk ke sana.
 
 ## Active Task
 
+### Dashboard bersama — i18n global (18 Sep 2026)
+
+Backend menyumbang dua kontrak aditif: `apps/framework/charts.py`
+(`datasets[].code` / `series[].code` di samping `label`) dan
+`search_placeholder_key` pada `builders/dashboard.table()`. Keduanya
+dipakai HR Period Summary; dashboard lain belum mengadopsi. Tidak ada
+label yang dihapus, tidak ada migration, tidak ada perubahan angka.
+Detail: `meinova-erp/docs/claude/dashboard.md` § "i18n dashboard bersama".
+
 ### HR Period Summary — drill-down audit + dwibahasa (17 Sep 2026)
 
 Kontrak drill-down diperluas secara aditif (kode stabil `source_code`,
