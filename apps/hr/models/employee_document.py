@@ -8,6 +8,7 @@ from apps.administration.models import DocumentType
 
 from .employee import Employee
 
+from apps.uploads.models import UploadedFile
 
 class EmployeeDocument(BaseModel):
     employee = models.ForeignKey(
@@ -22,59 +23,26 @@ class EmployeeDocument(BaseModel):
         related_name="employee_documents",
     )
 
-    document_name = models.CharField(
-        max_length=200,
-    )
+    document_name = models.CharField(max_length=200)
 
-    document_number = models.CharField(
-        max_length=150,
-        blank=True,
-        default="",
-    )
+    document_number = models.CharField(max_length=150,blank=True,default="")
+    issue_date = models.DateField(null=True,blank=True)
+    expiry_date = models.DateField(null=True,blank=True)
+    issuing_authority = models.CharField(max_length=200,blank=True,default="")
 
-    issue_date = models.DateField(
+    uploaded_file = models.OneToOneField(
+        UploadedFile,
+        on_delete=models.PROTECT,
+        related_name="+",
         null=True,
         blank=True,
     )
-
-    expiry_date = models.DateField(
-        null=True,
-        blank=True,
-    )
-
-    issuing_authority = models.CharField(
-        max_length=200,
-        blank=True,
-        default="",
-    )
-
-    file = models.FileField(
-        upload_to="employees/documents/",
-        null=True,
-        blank=True,
-    )
-
-    is_required = models.BooleanField(
-        default=False,
-    )
-
-    is_verified = models.BooleanField(
-        default=False,
-    )
-
-    verification_notes = models.TextField(
-        blank=True,
-        default="",
-    )
-
-    is_active = models.BooleanField(
-        default=True,
-    )
-
-    notes = models.TextField(
-        blank=True,
-        default="",
-    )
+    
+    is_required = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False)
+    verification_notes = models.TextField(blank=True,default="" )
+    is_active = models.BooleanField(default=True)
+    notes = models.TextField(blank=True,default="")
 
     class Meta:
         db_table = "hr_employee_document"
@@ -111,11 +79,20 @@ class EmployeeDocument(BaseModel):
         if (
             self.issue_date
             and self.expiry_date
-            and self.expiry_date < self.issue_date
+            and self.expiry_date
+            < self.issue_date
         ):
             errors["expiry_date"] = (
-                "Expiry Date tidak boleh lebih awal "
-                "dari Issue Date."
+                "Expiry Date cannot be earlier "
+                "than Issue Date."
+            )
+
+        if (
+            self.is_required
+            and not self.file
+        ):
+            errors["file"] = (
+                "Attachment is required."
             )
 
         if errors:

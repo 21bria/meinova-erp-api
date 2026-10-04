@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 
 from apps.core.models.base import BaseModel
 
@@ -72,11 +73,13 @@ class EmployeeBankAccount(BaseModel):
 
     class Meta:
         db_table = "hr_employee_bank_account"
+
         ordering = [
             "-is_primary",
             "bank__name",
             "account_name",
         ]
+
         indexes = [
             models.Index(
                 fields=["employee"],
@@ -92,6 +95,19 @@ class EmployeeBankAccount(BaseModel):
             ),
         ]
 
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "employee",
+                    "bank",
+                    "account_number",
+                ],
+                condition=Q(
+                    is_deleted=False,
+                ),
+                name="uniq_active_employee_bank_account",
+            ),
+        ]
     def __str__(self):
         return (
             f"{self.employee.employee_number} - "

@@ -7,7 +7,7 @@ EDUCATION_FIELDS = {
         label="Education Level",
         lookup_endpoint=(
             "/api/administration/references/hr/"
-            "lookup/educations/"
+            "lookup/education-levels/"
         ),
         required=True,
         table=True,

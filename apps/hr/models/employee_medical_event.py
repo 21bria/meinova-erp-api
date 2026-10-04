@@ -4,7 +4,7 @@ from django.db import models
 from apps.core.models.base import BaseModel
 
 from .employee import Employee
-
+from apps.uploads.models import UploadedFile
 
 class EmployeeMedicalEvent(BaseModel):
     class MedicalType(models.TextChoices):
@@ -32,75 +32,28 @@ class EmployeeMedicalEvent(BaseModel):
             "Permanent Unfit",
         )
 
-    employee = models.ForeignKey(
-        Employee,
-        on_delete=models.CASCADE,
-        related_name="medical_events",
-    )
-
-    medical_type = models.CharField(
-        max_length=40,
-        choices=MedicalType.choices,
-    )
-
+    employee = models.ForeignKey(Employee,on_delete=models.CASCADE,related_name="medical_events")
+    medical_type = models.CharField(max_length=40,choices=MedicalType.choices)
     event_date = models.DateField()
+    provider_name = models.CharField(max_length=200,blank=True,default="")
+    doctor_name = models.CharField(max_length=200,blank=True,default="")
+    result = models.CharField(max_length=150,blank=True,default="",)
+    fitness_status = models.CharField(max_length=40,choices=FitnessStatus.choices,default=FitnessStatus.NOT_APPLICABLE,)
+    restriction_notes = models.TextField(blank=True,default="")
+    next_due_date = models.DateField(null=True,blank=True)
 
-    provider_name = models.CharField(
-        max_length=200,
-        blank=True,
-        default="",
-    )
-
-    doctor_name = models.CharField(
-        max_length=200,
-        blank=True,
-        default="",
-    )
-
-    result = models.CharField(
-        max_length=150,
-        blank=True,
-        default="",
-    )
-
-    fitness_status = models.CharField(
-        max_length=40,
-        choices=FitnessStatus.choices,
-        default=FitnessStatus.NOT_APPLICABLE,
-    )
-
-    restriction_notes = models.TextField(
-        blank=True,
-        default="",
-    )
-
-    next_due_date = models.DateField(
+    uploaded_file = models.OneToOneField(
+        UploadedFile,
+        on_delete=models.PROTECT,
+        related_name="+",
         null=True,
         blank=True,
     )
 
-    attachment = models.FileField(
-        upload_to="employees/medical/",
-        null=True,
-        blank=True,
-    )
-
-    is_confidential = models.BooleanField(
-        default=True,
-    )
-
-    is_verified = models.BooleanField(
-        default=False,
-    )
-
-    is_active = models.BooleanField(
-        default=True,
-    )
-
-    notes = models.TextField(
-        blank=True,
-        default="",
-    )
+    is_confidential = models.BooleanField(default=True)
+    is_verified = models.BooleanField(default=False )
+    is_active = models.BooleanField(default=True)
+    notes = models.TextField(blank=True,default="")
 
     class Meta:
         db_table = "hr_employee_medical_event"

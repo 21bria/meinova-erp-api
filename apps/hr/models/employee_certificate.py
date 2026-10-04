@@ -5,6 +5,7 @@ from apps.core.models.base import BaseModel
 from apps.administration.models import (
     CertificateType
 )
+from apps.uploads.models.uploaded_file import UploadedFile
 
 from .employee import Employee
 
@@ -22,70 +23,30 @@ class EmployeeCertificate(BaseModel):
         related_name="employee_certificates",
     )
 
-    certificate_name = models.CharField(
-        max_length=200,
-    )
+    certificate_name = models.CharField(max_length=200)
 
-    certificate_number = models.CharField(
-        max_length=100,
-        blank=True,
-        default="",
-    )
+    certificate_number = models.CharField(max_length=100,blank=True,default="")
+    issuing_organization = models.CharField(max_length=200,blank=True,default="")
+    issue_date = models.DateField(null=True,blank=True)
+    expiry_date = models.DateField(null=True,blank=True)
 
-    issuing_organization = models.CharField(
-        max_length=200,
-        blank=True,
-        default="",
-    )
+    credential_id = models.CharField(max_length=150,blank=True,default="",)
+    credential_url = models.URLField(blank=True,default="",)
 
-    issue_date = models.DateField(
+    uploaded_file = models.OneToOneField(
+        UploadedFile,
+        on_delete=models.PROTECT,
+        related_name="+",
         null=True,
         blank=True,
     )
 
-    expiry_date = models.DateField(
-        null=True,
-        blank=True,
-    )
+    is_lifetime = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False)
+    verification_notes = models.TextField(blank=True,default="" )
+    is_active = models.BooleanField(default=True)
 
-    credential_id = models.CharField(
-        max_length=150,
-        blank=True,
-        default="",
-    )
-
-    credential_url = models.URLField(
-        blank=True,
-        default="",
-    )
-
-    attachment = models.FileField(
-        upload_to="employees/certificates/",
-        null=True,
-        blank=True,
-    )
-
-    is_lifetime = models.BooleanField(
-        default=False,
-    )
-
-    is_verified = models.BooleanField(
-        default=False,
-    )
-
-    verification_notes = models.TextField(
-        blank=True,
-        default="",
-    )
-
-    is_active = models.BooleanField(
-        default=True,
-    )
-
-    notes = models.TextField(
-        blank=True,
-        default="",
-    )
+    notes = models.TextField(blank=True,default="")
 
     class Meta:
         db_table = "hr_employee_certificate"

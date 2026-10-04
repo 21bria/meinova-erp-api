@@ -1,0 +1,32 @@
+from .approval import APPROVAL_FIELDS
+from .general import GENERAL_FIELDS
+from .location import LOCATION_FIELDS
+from .permission import (
+    PERMISSION_DISPLAY_FIELDS,
+    PERMISSION_FIELDS,
+)
+from .system import SYSTEM_FIELDS
+from .time import TIME_FIELDS
+
+
+ATTENDANCE_FIELDS = {
+    **GENERAL_FIELDS,
+    **TIME_FIELDS,
+    **LOCATION_FIELDS,
+    **PERMISSION_FIELDS,
+    **PERMISSION_DISPLAY_FIELDS,
+    **APPROVAL_FIELDS,
+    **SYSTEM_FIELDS,
+}
+
+
+__all__ = [
+    "ATTENDANCE_FIELDS",
+    "GENERAL_FIELDS",
+    "TIME_FIELDS",
+    "LOCATION_FIELDS",
+    "PERMISSION_FIELDS",
+    "PERMISSION_DISPLAY_FIELDS",
+    "APPROVAL_FIELDS",
+    "SYSTEM_FIELDS",
+]

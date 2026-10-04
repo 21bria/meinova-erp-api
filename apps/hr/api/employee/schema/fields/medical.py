@@ -139,13 +139,20 @@ MEDICAL_FIELDS = {
         order=80,
     ),
 
-    "attachment": field.file(
+    "uploaded_file": field.file(
         tab="medical",
         label="Attachment",
-        table=False,
-        filter=False,
-        search=False,
-        sortable=False,
+        required=False,
+        multiple=False,
+        accept=[
+            "pdf",
+            "jpg",
+            "jpeg",
+            "png",
+            "doc",
+            "docx",
+        ],
+        layout="full",
         order=90,
     ),
 

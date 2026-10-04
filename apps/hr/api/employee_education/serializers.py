@@ -70,22 +70,23 @@ class EmployeeEducationSerializer(
             and end_date < start_date
         ):
             errors["end_date"] = (
-                "End Date tidak boleh lebih awal "
-                "dari Start Date."
+              "End Date cannot be earlier" 
+              "from Start Date."
             )
 
         if (
             gpa is not None
-            and (
-                gpa < 0
-                or gpa > 4
+            and not (
+                0 <= gpa <= 4
             )
         ):
             errors["gpa"] = (
-                "GPA harus berada di antara 0 dan 4."
+               "GPA must be between 0.00 and 4.00."
             )
 
         if errors:
-            raise serializers.ValidationError(errors)
+            raise serializers.ValidationError(
+                errors,
+            )
 
         return attrs

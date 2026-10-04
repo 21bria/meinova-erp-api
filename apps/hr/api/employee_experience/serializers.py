@@ -57,14 +57,14 @@ class EmployeeExperienceSerializer(
             and end_date < start_date
         ):
             errors["end_date"] = (
-                "End Date tidak boleh lebih awal "
-                "dari Start Date."
+                "End Date cannot be earlier" 
+                "from Start Date."
             )
 
         if is_current and end_date:
             errors["end_date"] = (
-                "End Date harus kosong jika pengalaman "
-                "masih berlangsung."
+                "End Date must be blank if the experience"
+                "is still ongoing."
             )
 
         if (
@@ -72,7 +72,7 @@ class EmployeeExperienceSerializer(
             and last_salary < 0
         ):
             errors["last_salary"] = (
-                "Last Salary tidak boleh bernilai negatif."
+                "Last Salary cannot be negative."
             )
 
         if errors:

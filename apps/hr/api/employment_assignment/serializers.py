@@ -65,6 +65,12 @@ class EmploymentAssignmentSerializer(
         default=None,
     )
 
+    point_of_hire_name = serializers.CharField(
+        source="point_of_hire.name",
+        read_only=True,
+        default=None,
+    )
+
     class Meta:
         model = EmploymentAssignment
         fields = "__all__"

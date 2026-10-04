@@ -98,6 +98,7 @@ ATTENDANCE_DAY_METRICS = {
     Metric.SCHEDULED,
     Metric.PRESENT,
     Metric.ABSENT,
+    Metric.BUSINESS_TRIP,
     Metric.OFF_WORKED,
     Metric.HOLIDAY_WORKED,
 }

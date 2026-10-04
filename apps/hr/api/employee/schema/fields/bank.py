@@ -56,6 +56,7 @@ BANK_FIELDS = {
             "/api/administration/currency/"
             "lookup/currencies/"
         ),
+        display_key="currency_code",
         table=True,
         filter=True,
         search=False,

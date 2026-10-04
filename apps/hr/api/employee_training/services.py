@@ -5,9 +5,18 @@ from typing import Any
 from django.db import transaction
 
 from apps.hr.models import EmployeeTraining
+from apps.uploads.services import (
+    AttachmentLifecycleService,
+)
 
 
-class EmployeeTrainingService:
+class EmployeeTrainingService(
+    AttachmentLifecycleService,
+):
+    attachment_fields = (
+        "uploaded_file",
+    )
+
     FIELDS = {
         "employee",
         "training_category",
@@ -19,7 +28,7 @@ class EmployeeTrainingService:
         "score",
         "certificate_number",
         "expiry_date",
-        "attachment",
+        "uploaded_file",
         "is_mandatory",
         "is_completed",
         "is_active",
@@ -72,12 +81,33 @@ class EmployeeTrainingService:
         payload = cls.build_payload(data)
 
         for key, value in payload.items():
-            setattr(instance, key, value)
+            setattr(
+                instance,
+                key,
+                value,
+            )
+
+        update_fields = set(
+            payload.keys(),
+        )
 
         if user is not None:
             instance.updated_by = user
+            update_fields.add(
+                "updated_by",
+            )
 
         instance.full_clean()
-        instance.save()
+
+        if update_fields:
+            update_fields.add(
+                "updated_at",
+            )
+
+            instance.save(
+                update_fields=list(
+                    update_fields,
+                ),
+            )
 
         return instance

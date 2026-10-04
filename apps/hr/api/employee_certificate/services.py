@@ -5,9 +5,18 @@ from typing import Any
 from django.db import transaction
 
 from apps.hr.models import EmployeeCertificate
+from apps.uploads.services import (
+    AttachmentLifecycleService,
+)
 
 
-class EmployeeCertificateService:
+class EmployeeCertificateService(
+    AttachmentLifecycleService,
+):
+    attachment_fields = (
+        "uploaded_file",
+    )
+
     FIELDS = {
         "employee",
         "certificate_type",
@@ -18,7 +27,7 @@ class EmployeeCertificateService:
         "expiry_date",
         "credential_id",
         "credential_url",
-        "attachment",
+        "uploaded_file",
         "is_lifetime",
         "is_verified",
         "verification_notes",
@@ -77,12 +86,33 @@ class EmployeeCertificateService:
         payload = cls.build_payload(data)
 
         for key, value in payload.items():
-            setattr(instance, key, value)
+            setattr(
+                instance,
+                key,
+                value,
+            )
+
+        update_fields = set(
+            payload.keys(),
+        )
 
         if user is not None:
             instance.updated_by = user
+            update_fields.add(
+                "updated_by",
+            )
 
         instance.full_clean()
-        instance.save()
+
+        if update_fields:
+            update_fields.add(
+                "updated_at",
+            )
+
+            instance.save(
+                update_fields=list(
+                    update_fields,
+                ),
+            )
 
         return instance

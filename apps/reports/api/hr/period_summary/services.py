@@ -36,6 +36,10 @@ from apps.accounts.permissions import view_permission_for
 from apps.accounts.scoping import DataScopeService
 from apps.framework.charts import dataset as chart_dataset, point as chart_point
 from apps.framework.periods import trend_buckets
+from apps.hr.api.attendance.classification import (
+    is_business_trip_only,
+    is_present,
+)
 from apps.hr.api.attendance.schedule import (
     holidays_bulk,
     scheduled_work_days_bulk,
@@ -71,17 +75,10 @@ from .metrics import (
 )
 
 
-# Status yang dihitung "masuk kerja". Disamakan persis dengan
-# `HRDashboardService.PRESENT_STATUSES` — dua daftar yang harus tetap
-# sama adalah cara selisih antara dashboard dan laporan lahir diam-diam.
-PRESENT_STATUSES = frozenset(
-    {
-        AttendanceStatus.PRESENT,
-        AttendanceStatus.LATE,
-        AttendanceStatus.REMOTE,
-        AttendanceStatus.BUSINESS_TRIP,
-    }
-)
+# Present vs Business Trip dibaca dari
+# `apps.hr.api.attendance.classification` — modul yang sama dengan
+# dashboard HR. Dulu masing-masing memegang daftar yang "harus tetap
+# sama", dan keduanya memasukkan BUSINESS_TRIP ke Present (BT-3R).
 
 
 # Baris presensi yang **membatalkan** hari terjadwal. Hari yang barisnya
@@ -190,6 +187,7 @@ class EmployeeSummary:
     scheduled: int = 0
     present: int = 0
     absent: int = 0
+    business_trip: int = 0
 
     field_break: int = 0
     off_worked: int = 0
@@ -267,6 +265,7 @@ class EmployeeSummary:
             Metric.SCHEDULED: self.scheduled,
             Metric.PRESENT: self.present,
             Metric.ABSENT: self.absent,
+            Metric.BUSINESS_TRIP: self.business_trip,
             Metric.FIELD_BREAK: self.field_break,
             Metric.OFF_WORKED: self.off_worked,
             Metric.HOLIDAY_WORKED: self.holiday_worked,
@@ -645,10 +644,12 @@ class HRPeriodSummaryService:
                 "status",
                 "late_minutes",
                 "early_leave_minutes",
+                # Dibaca klasifikasi juga: baris dinas yang punya tap
+                # adalah Present, bukan Business Trip (BT-3R).
+                "check_in",
                 # Bahan drill-down saja; klasifikasi tidak membacanya.
                 "scheduled_check_in",
                 "scheduled_check_out",
-                "check_in",
                 "check_out",
                 "worked_minutes",
                 "excused_late_minutes",
@@ -769,11 +770,14 @@ class HRPeriodSummaryService:
 
         **Hari terjadwal**
         1. barisnya berbunyi libur/off → hari itu keluar dari Scheduled
-        2. hadir (present/late/remote/business trip) → Present
-        3. tertutup dokumen cuti → Leave, dikelompokkan dari tipe aslinya
-        4. sisanya → Absent
+        2. hadir (present/late/remote, atau dinas yang punya tap) → Present
+        3. dinas tanpa tap → Business Trip — bukan Present, bukan Absent
+        4. tertutup dokumen cuti → Leave, dikelompokkan dari tipe aslinya
+        5. sisanya → Absent
 
-        Butir 3 dan 4 adalah aturan `AttendanceClosingService` yang sudah
+        Jadi Scheduled = Present + Business Trip + Leave + Absent.
+
+        Butir 4 dan 5 adalah aturan `AttendanceClosingService` yang sudah
         berlaku saat menutup hari, cuma dibaca alih-alih ditulis. Yang
         penting: hari terjadwal **tanpa baris presensi sama sekali**
         tetap terhitung — di sistem ini ketidakhadiran memang berupa
@@ -783,7 +787,11 @@ class HRPeriodSummaryService:
         **Hari tidak terjadwal** — hanya dihitung kalau orangnya benar-
         benar bekerja: libur → Holiday Worked, selain itu → Off Worked.
         Keduanya **bukan tambahan** Present; itu sebabnya keduanya punya
-        kolomnya sendiri.
+        kolomnya sendiri. Baris dinas tanpa tap di hari tidak terjadwal
+        (hanya bisa lahir dari input tangan — penutup hari tidak menulis
+        baris di hari off) masuk Business Trip, bukan Off/Holiday
+        Worked: dinas bukan kehadiran fisik, sama seperti payroll
+        menghitungnya `business_trip_days`.
         """
         row.attendance_records.update(attendance)
 
@@ -794,6 +802,7 @@ class HRPeriodSummaryService:
         for day in sorted(days):
             record = attendance.get(day)
             status = record["status"] if record else None
+            check_in = record.get("check_in") if record else None
 
             kind = day_type(day, scheduled_days, holidays)
 
@@ -804,7 +813,7 @@ class HRPeriodSummaryService:
                 row.scheduled += 1
                 buckets[Metric.SCHEDULED].append(day)
 
-                if status in PRESENT_STATUSES:
+                if is_present(status, check_in):
                     row.present += 1
                     buckets[Metric.PRESENT].append(day)
 
@@ -822,6 +831,12 @@ class HRPeriodSummaryService:
 
                     continue
 
+                if is_business_trip_only(status, check_in):
+                    row.business_trip += 1
+                    buckets[Metric.BUSINESS_TRIP].append(day)
+
+                    continue
+
                 leave = leave_days.get(day)
 
                 if leave is not None:
@@ -836,10 +851,16 @@ class HRPeriodSummaryService:
 
                 continue
 
+            if is_business_trip_only(status, check_in):
+                row.business_trip += 1
+                buckets[Metric.BUSINESS_TRIP].append(day)
+
+                continue
+
             # Hari di luar jadwal. Yang tidak ada tapnya tidak
             # menghasilkan apa pun — orang yang sedang off memang tidak
             # menekan mesin, dan itu bukan informasi.
-            if status not in PRESENT_STATUSES:
+            if not is_present(status, check_in):
                 continue
 
             metric = (
@@ -1142,7 +1163,8 @@ class HRPeriodSummaryPresenter:
 
         Penyebutnya **bukan** Scheduled: hari terjadwal yang tertutup
         cuti bukan peluang hadir, dan memasukkannya membuat orang yang
-        mengambil haknya menurunkan angka unitnya. Aturan yang sama
+        mengambil haknya menurunkan angka unitnya. Hari Business Trip
+        juga tidak ikut — ia bukan kehadiran fisik, dan bukan mangkir. Aturan yang sama
         dengan `HRDashboardService.attendance_rate`, cuma dihitung dari
         baris yang sudah diklasifikasi alih-alih dari status mentah.
         """
@@ -1451,6 +1473,7 @@ class HRPeriodSummaryPresenter:
         Metric.SCHEDULED,
         Metric.PRESENT,
         Metric.ABSENT,
+        Metric.BUSINESS_TRIP,
         Metric.ANNUAL,
         Metric.SICK,
         Metric.OTHER_LEAVE,
@@ -1489,6 +1512,7 @@ class HRPeriodSummaryPresenter:
             Metric.SCHEDULED: row.scheduled,
             Metric.PRESENT: row.present,
             Metric.ABSENT: row.absent,
+            Metric.BUSINESS_TRIP: row.business_trip,
             Metric.ANNUAL: float(row.leave(Metric.ANNUAL)),
             Metric.SICK: float(row.leave(Metric.SICK)),
             Metric.OTHER_LEAVE: float(row.leave(Metric.OTHER_LEAVE)),

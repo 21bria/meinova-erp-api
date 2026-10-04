@@ -53,6 +53,12 @@ class PayrollAssignmentSerializer(
         default=None,
     )
 
+    payroll_policy_name = serializers.CharField(
+        source="payroll_policy.name",
+        read_only=True,
+        default=None,
+    )
+
     allowance_template_name = serializers.CharField(
         source="allowance_template.name",
         read_only=True,
@@ -147,6 +153,18 @@ class PayrollAssignmentSerializer(
                 "overtime_group": (
                     "Overtime Group hanya boleh dipilih "
                     "jika employee eligible overtime."
+                ),
+            })
+
+        daily_rate = attrs.get(
+            "daily_rate",
+            getattr(instance, "daily_rate", None),
+        )
+
+        if daily_rate is not None and daily_rate < 0:
+            raise serializers.ValidationError({
+                "daily_rate": (
+                    "Daily Rate tidak boleh bernilai negatif."
                 ),
             })
 

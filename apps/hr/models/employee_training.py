@@ -10,6 +10,7 @@ from apps.administration.models import (
 
 from .employee import Employee
 
+from apps.uploads.models import UploadedFile
 
 class EmployeeTraining(BaseModel):
     employee = models.ForeignKey(
@@ -26,9 +27,7 @@ class EmployeeTraining(BaseModel):
         related_name="employee_trainings",
     )
 
-    training_name = models.CharField(
-        max_length=200,
-    )
+    training_name = models.CharField(max_length=200,)
 
     provider = models.ForeignKey(
         TrainingProvider,
@@ -40,53 +39,24 @@ class EmployeeTraining(BaseModel):
 
     start_date = models.DateField()
 
-    end_date = models.DateField(
+    end_date = models.DateField(null=True,blank=True,)
+    duration_hours = models.DecimalField(max_digits=8,decimal_places=2,null=True,blank=True,)
+    score = models.DecimalField(max_digits=6,decimal_places=2,null=True,blank=True,)
+
+    certificate_number = models.CharField(max_length=100,blank=True,default="")
+    expiry_date = models.DateField(null=True,blank=True)
+
+    uploaded_file = models.OneToOneField(
+        UploadedFile,
+        on_delete=models.PROTECT,
+        related_name="+",
         null=True,
         blank=True,
     )
 
-    duration_hours = models.DecimalField(
-        max_digits=8,
-        decimal_places=2,
-        null=True,
-        blank=True,
-    )
-
-    score = models.DecimalField(
-        max_digits=6,
-        decimal_places=2,
-        null=True,
-        blank=True,
-    )
-
-    certificate_number = models.CharField(
-        max_length=100,
-        blank=True,
-        default="",
-    )
-
-    expiry_date = models.DateField(
-        null=True,
-        blank=True,
-    )
-
-    attachment = models.FileField(
-        upload_to="employees/trainings/",
-        null=True,
-        blank=True,
-    )
-
-    is_mandatory = models.BooleanField(
-        default=False,
-    )
-
-    is_completed = models.BooleanField(
-        default=True,
-    )
-
-    is_active = models.BooleanField(
-        default=True,
-    )
+    is_mandatory = models.BooleanField(default=False)
+    is_completed = models.BooleanField(default=True )
+    is_active = models.BooleanField(default=True)
 
     notes = models.TextField(
         blank=True,

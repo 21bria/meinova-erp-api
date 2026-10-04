@@ -14,6 +14,19 @@ class Migration(migrations.Migration):
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
+    # Migrasi ini menambah FK ke `administration.Site`, model yang
+    # dihapus oleh `administration.0011_rename_site_to_location`.
+    # Tanpa pernyataan urutan ini, Django bebas menjadwalkan rename lebih
+    # dulu — dan replay dari nol gagal dengan
+    # "Related model 'administration.site' cannot be resolved".
+    #
+    # Database yang sudah termigrasi tidak terpengaruh: Django cuma
+    # mencatat nama migrasi, bukan isinya. Yang diperbaiki adalah
+    # penyediaan tenant baru dan pembuatan database uji.
+    run_before = [
+        ("administration", "0011_rename_site_to_location"),
+    ]
+
     operations = [
         migrations.CreateModel(
             name='EmploymentAssignment',

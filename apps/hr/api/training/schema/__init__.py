@@ -1,0 +1,7 @@
+from .participant import TRAINING_PARTICIPANT_SCHEMA
+from .program import TRAINING_PROGRAM_SCHEMA
+
+__all__ = [
+    "TRAINING_PROGRAM_SCHEMA",
+    "TRAINING_PARTICIPANT_SCHEMA",
+]

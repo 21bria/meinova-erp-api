@@ -1,6 +1,8 @@
 from rest_framework import serializers
 
 from apps.hr.models import EmployeeMedicalEvent
+from apps.uploads.api.serializers import UploadedFileSerializer
+from apps.uploads.models import UploadedFile
 
 
 class EmployeeMedicalEventSerializer(
@@ -21,6 +23,17 @@ class EmployeeMedicalEventSerializer(
         read_only=True,
     )
 
+    uploaded_file = serializers.PrimaryKeyRelatedField(
+        queryset=UploadedFile.objects.active(),
+        required=False,
+        allow_null=True,
+    )
+
+    uploaded_file_detail = UploadedFileSerializer(
+        source="uploaded_file",
+        read_only=True,
+    )
+
     class Meta:
         model = EmployeeMedicalEvent
         fields = "__all__"
@@ -34,6 +47,10 @@ class EmployeeMedicalEventSerializer(
             "deleted_at",
             "deleted_by",
             "is_deleted",
+            "employee_name",
+            "medical_type_label",
+            "fitness_status_label",
+            "uploaded_file_detail",
         ]
 
     def validate(self, attrs):
@@ -41,12 +58,20 @@ class EmployeeMedicalEventSerializer(
 
         event_date = attrs.get(
             "event_date",
-            getattr(instance, "event_date", None),
+            getattr(
+                instance,
+                "event_date",
+                None,
+            ),
         )
 
         next_due_date = attrs.get(
             "next_due_date",
-            getattr(instance, "next_due_date", None),
+            getattr(
+                instance,
+                "next_due_date",
+                None,
+            ),
         )
 
         fitness_status = attrs.get(
@@ -54,13 +79,19 @@ class EmployeeMedicalEventSerializer(
             getattr(
                 instance,
                 "fitness_status",
-                EmployeeMedicalEvent.FitnessStatus.NOT_APPLICABLE,
+                EmployeeMedicalEvent
+                .FitnessStatus
+                .NOT_APPLICABLE,
             ),
         )
 
         restriction_notes = attrs.get(
             "restriction_notes",
-            getattr(instance, "restriction_notes", ""),
+            getattr(
+                instance,
+                "restriction_notes",
+                "",
+            ),
         )
 
         errors = {}
@@ -71,21 +102,27 @@ class EmployeeMedicalEventSerializer(
             and next_due_date < event_date
         ):
             errors["next_due_date"] = (
-                "Next Due Date tidak boleh lebih awal "
-                "dari Event Date."
+                "The next due date cannot be earlier "
+                "than the event date."
             )
 
         if (
             fitness_status
-            == EmployeeMedicalEvent.FitnessStatus.FIT_WITH_RESTRICTION
-            and not str(restriction_notes or "").strip()
+            == EmployeeMedicalEvent
+            .FitnessStatus
+            .FIT_WITH_RESTRICTION
+            and not str(
+                restriction_notes or "",
+            ).strip()
         ):
             errors["restriction_notes"] = (
-                "Restriction Notes wajib diisi jika status "
-                "Fit With Restriction."
+                "Restriction Notes must be filled in "
+                "if the status is Fit With Restrictions."
             )
 
         if errors:
-            raise serializers.ValidationError(errors)
+            raise serializers.ValidationError(
+                errors,
+            )
 
         return attrs

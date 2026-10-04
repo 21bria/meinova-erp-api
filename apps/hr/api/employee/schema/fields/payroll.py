@@ -114,6 +114,27 @@ PAYROLL_FIELDS = {
         order=110,
     ),
 
+    # Kebijakan perhitungan pegawai ini. Dikosongkan = ikut Payroll
+    # Setting perusahaannya, dan itu keadaan yang paling lazim.
+    #
+    # Ditaruh di tab payroll pegawai — yaitu di `PayrollAssignment` —
+    # karena hanya baris itu yang punya rentang berlaku: assignment
+    # yang berlaku 1 Juli membawa kebijakan barunya untuk payroll Juli,
+    # sementara payroll Juni tetap memakai kebijakan lama.
+    "payroll_policy": field.lookup(
+        tab="payroll",
+        label="Payroll Policy",
+        lookup_endpoint="/api/payroll/payroll-policies/lookup/",
+        table=False,
+        filter=True,
+        order=115,
+        help_text=(
+            "Dikosongkan = ikut Payroll Setting perusahaan. Dipakai "
+            "kalau kelompok pegawai ini dihitung berbeda dari default "
+            "perusahaannya."
+        ),
+    ),
+
     "effective_from": field.date(
         tab="payroll",
         label="Effective From",
@@ -136,6 +157,20 @@ PAYROLL_FIELDS = {
         permission="payroll.view_salary",
         table=False,
         order=130,
+    ),
+
+    "daily_rate": field.currency(
+        tab="payroll",
+        label="Daily Rate",
+        min=0,
+        permission="payroll.view_salary",
+        table=False,
+        order=135,
+        help_text=(
+            "Upah sehari. Hanya dipakai kalau Payroll Policy pegawai "
+            "ini berdasar Harian dan tarifnya memang diambil dari "
+            "sini."
+        ),
     ),
 
     "allowance_template": field.lookup(

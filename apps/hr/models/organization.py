@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from apps.core.models.base import BaseModel
@@ -9,7 +10,7 @@ from apps.administration.models import (
     Division,
     Position,
     Section,
-    Site,
+    Location,
 )
 from apps.administration.models.references.hr import (
     JobGrade,
@@ -40,8 +41,8 @@ class OrganizationAssignment(BaseModel):
         related_name="employee_organizations",
     )
 
-    site = models.ForeignKey(
-        Site,
+    location = models.ForeignKey(
+        Location,
         on_delete=models.PROTECT,
         null=True,
         blank=True,
@@ -118,6 +119,60 @@ class OrganizationAssignment(BaseModel):
 
     class Meta:
         db_table = "hr_employee_organization"
+
+    # anak -> induk yang harus konsisten dengannya
+    HIERARCHY_PARENTS = {
+        "branch": ("company",),
+        "location": ("company", "branch"),
+        "division": ("company", "branch", "location"),
+        "department": ("company", "branch", "location", "division"),
+        "section": ("company", "branch", "location", "division", "department"),
+        "position": ("company", "branch", "location", "division", "department"),
+        "cost_center": ("company", "branch", "location", "division", "department"),
+    }
+
+    def clean(self):
+        """
+        Menjaga penempatan tetap masuk akal: location yang dipilih harus
+        benar-benar milik branch yang dipilih, dan seterusnya ke atas.
+
+        Cascade di form sudah membatasi pilihan user, tapi pemanggil API
+        langsung dan proses import tidak lewat form — jadi aturannya
+        ditegakkan di sini juga.
+        """
+        super().clean()
+
+        errors = {}
+
+        for child_field, parent_fields in self.HIERARCHY_PARENTS.items():
+            child = getattr(self, child_field, None)
+
+            if child is None:
+                continue
+
+            for parent_field in parent_fields:
+                selected_parent = getattr(self, parent_field, None)
+
+                if selected_parent is None:
+                    continue
+
+                # Induk pada master boleh kosong (hierarkinya opsional);
+                # yang dilarang hanya bila terisi tapi berbeda.
+                child_parent = getattr(child, parent_field, None)
+
+                if child_parent is None:
+                    continue
+
+                if child_parent.pk != selected_parent.pk:
+                    errors[child_field] = (
+                        f"{child} tidak berada di bawah "
+                        f"{selected_parent}."
+                    )
+
+                    break
+
+        if errors:
+            raise ValidationError(errors)
 
     def __str__(self):
         return f"Organization - {self.employee}"

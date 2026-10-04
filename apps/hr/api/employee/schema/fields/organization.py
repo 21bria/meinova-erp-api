@@ -9,7 +9,17 @@ ORGANIZATION_FIELDS = {
             "/api/administration/organization/lookup/companies/"
         ),
         required=True,
-        table=False,
+        # Nomor pegawai mengikuti kode company, jadi memilih company
+        # langsung memperlihatkan nomor yang akan terbit di tab General
+        # — bukan kotak kosong berlabel "terisi otomatis" yang tidak
+        # memberi tahu apa-apa sampai Simpan ditekan.
+        autofill={"employee_number": "next_employee_number"},
+        # Tampil di tabel: daftar pegawai tanpa kolom Company tidak bisa
+        # dibaca di tenant berisi lebih dari satu badan usaha — dua
+        # orang bernomor mirip dari perusahaan berbeda terlihat seperti
+        # duplikat yang perlu dibersihkan.
+        table=True,
+        display_key="company_name",
         filter=True,
         order=10,
     ),
@@ -29,17 +39,31 @@ ORGANIZATION_FIELDS = {
         order=20,
     ),
 
-    "site": field.lookup(
+    # Wajib, walau di master organisasi Location boleh kosong.
+    #
+    # Dua hal menempel ke kolom ini dan dua-duanya gagal diam-diam kalau
+    # dibiarkan kosong: cakupan data (`DATA_SCOPE_INCLUDE_NULL=False`
+    # membuat pegawai tanpa lokasi **tidak terlihat siapa pun** kecuali
+    # superuser — termasuk oleh admin yang baru saja membuatnya), dan
+    # kalender kerja yang menentukan potongan hari cuti. Boleh kosong di
+    # model tetap dipertahankan untuk importer dan data lama.
+    "location": field.lookup(
         tab="organization",
-        label="Site",
+        label="Location",
         lookup_endpoint=(
-            "/api/administration/organization/lookup/sites/"
+            "/api/administration/organization/lookup/locations/"
         ),
-        depends_on="branch",
+        depends_on="company",
         lookup_params={
+            "company_id": "$company",
             "branch_id": "$branch",
         },
-        table=False,
+        required=True,
+        # Penempatan kerja fisik — yang menentukan absensi, shift,
+        # kalender libur, dan cakupan data. Kolom yang paling sering
+        # ditanyakan setelah nama.
+        table=True,
+        display_key="location_name",
         filter=True,
         order=30,
     ),
@@ -50,9 +74,11 @@ ORGANIZATION_FIELDS = {
         lookup_endpoint=(
             "/api/administration/organization/lookup/divisions/"
         ),
-        depends_on="site",
+        depends_on="company",
         lookup_params={
-            "site_id": "$site",
+            "company_id": "$company",
+            "branch_id": "$branch",
+            "location_id": "$location",
         },
         table=False,
         filter=True,
@@ -65,8 +91,10 @@ ORGANIZATION_FIELDS = {
         lookup_endpoint=(
             "/api/administration/organization/lookup/departments/"
         ),
-        depends_on="division",
+        depends_on="company",
         lookup_params={
+            "company_id": "$company",
+            "location_id": "$location",
             "division_id": "$division",
         },
         table=False,
@@ -80,8 +108,11 @@ ORGANIZATION_FIELDS = {
         lookup_endpoint=(
             "/api/administration/organization/lookup/sections/"
         ),
-        depends_on="department",
+        depends_on="company",
         lookup_params={
+            "company_id": "$company",
+            "location_id": "$location",
+            "division_id": "$division",
             "department_id": "$department",
         },
         table=False,
@@ -95,8 +126,12 @@ ORGANIZATION_FIELDS = {
         lookup_endpoint=(
             "/api/administration/organization/lookup/positions/"
         ),
-        depends_on="section",
+        depends_on="company",
         lookup_params={
+            "company_id": "$company",
+            "location_id": "$location",
+            "division_id": "$division",
+            "department_id": "$department",
             "section_id": "$section",
         },
         table=False,
@@ -131,7 +166,11 @@ ORGANIZATION_FIELDS = {
     "reports_to": field.lookup(
         tab="organization",
         label="Reports To",
-        lookup_endpoint="/api/hr/lookup/employees/",
+        lookup_endpoint="/api/hr/employees/lookup/",
+        # Tanpa `display_key` generator jatuh ke `reports_to_name`, dan
+        # kebetulan itu memang nama field yang dikirim serializer — tapi
+        # disebut eksplisit supaya kaitannya terbaca dari sini juga.
+        display_key="reports_to_name",
         depends_on="company",
         lookup_params={
             "company_id": "$company",
@@ -157,17 +196,19 @@ ORGANIZATION_FIELDS = {
         order=120,
     ),
 
-    "project": field.lookup(
-        tab="organization",
-        label="Project",
-        lookup_endpoint="/api/projects/lookup/projects/",
-        depends_on="company",
-        lookup_params={
-            "company_id": "$company",
-        },
-        table=False,
-        order=130,
-    ),
+    # `project` DIHAPUS dari sini — rusak di tiga tempat sekaligus, dan
+    # ketiganya gagal tanpa suara:
+    #
+    # 1. `OrganizationAssignment` tidak punya kolom `project` sama
+    #    sekali;
+    # 2. namanya tidak terdaftar di `EmployeeSerializer.fields`, jadi
+    #    nilainya dibuang setelah PATCH membalas 200;
+    # 3. `lookup_endpoint`-nya `/api/administration/projects/lookup/`
+    #    membalas 404 — dropdown kosong tanpa pesan.
+    #
+    # Kalau penempatan per proyek nanti memang dibutuhkan, yang harus
+    # ditambah lebih dulu adalah modelnya, bukan menghidupkan lagi field
+    # ini.
 
     "organization_effective_date": field.date(
         tab="organization",

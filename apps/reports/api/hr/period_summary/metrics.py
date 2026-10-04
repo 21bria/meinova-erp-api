@@ -19,6 +19,11 @@ class Metric:
     PRESENT = "present"
     ABSENT = "absent"
 
+    # Hari dinas tanpa tap (BT-3R). Bukan Present — dinas adalah kerja
+    # yang diizinkan di luar tempat kerja, bukan kehadiran fisik — dan
+    # bukan Absent.
+    BUSINESS_TRIP = "business_trip"
+
     ANNUAL = "annual"
     SICK = "sick"
     OTHER_LEAVE = "other_leave"
@@ -91,6 +96,7 @@ METRIC_UNITS = {
     Metric.SCHEDULED: Unit.DAY,
     Metric.PRESENT: Unit.DAY,
     Metric.ABSENT: Unit.DAY,
+    Metric.BUSINESS_TRIP: Unit.DAY,
     Metric.ANNUAL: Unit.DAY,
     Metric.SICK: Unit.DAY,
     Metric.OTHER_LEAVE: Unit.DAY,
@@ -114,6 +120,7 @@ DRILLDOWN_METRICS = (
     Metric.SCHEDULED,
     Metric.PRESENT,
     Metric.ABSENT,
+    Metric.BUSINESS_TRIP,
     Metric.ANNUAL,
     Metric.SICK,
     Metric.OTHER_LEAVE,
@@ -134,6 +141,7 @@ METRIC_LABELS = {
     Metric.SCHEDULED: "Scheduled",
     Metric.PRESENT: "Present",
     Metric.ABSENT: "Absent",
+    Metric.BUSINESS_TRIP: "Business Trip",
     Metric.ANNUAL: "Annual",
     Metric.SICK: "Sick",
     Metric.OTHER_LEAVE: "Other Leave",
@@ -174,6 +182,9 @@ METRIC_FEATURES = {
     Metric.SCHEDULED: HRFeature.ATTENDANCE,
     Metric.PRESENT: HRFeature.ATTENDANCE,
     Metric.ABSENT: HRFeature.ATTENDANCE,
+    # Dibaca dari baris presensi yang sudah diresolusi, bukan dari
+    # dokumen Business Trip — jadi ia ikut proses Attendance.
+    Metric.BUSINESS_TRIP: HRFeature.ATTENDANCE,
     Metric.LATE: HRFeature.ATTENDANCE,
     Metric.EARLY: HRFeature.ATTENDANCE,
     Metric.OFF_WORKED: HRFeature.ATTENDANCE,

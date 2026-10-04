@@ -7,9 +7,18 @@ from typing import Any
 from django.db import transaction
 
 from apps.hr.models import EmployeeDocument
+from apps.uploads.services import (
+    AttachmentLifecycleService,
+)
 
 
-class EmployeeDocumentService:
+class EmployeeDocumentService(
+    AttachmentLifecycleService,
+):
+    attachment_fields = (
+        "uploaded_file",
+    )
+
     FIELDS = {
         "employee",
         "document_type",
@@ -18,7 +27,7 @@ class EmployeeDocumentService:
         "issue_date",
         "expiry_date",
         "issuing_authority",
-        "file",
+        "uploaded_file",
         "is_required",
         "is_verified",
         "verification_notes",
@@ -72,12 +81,33 @@ class EmployeeDocumentService:
         payload = cls.build_payload(data)
 
         for key, value in payload.items():
-            setattr(instance, key, value)
+            setattr(
+                instance,
+                key,
+                value,
+            )
+
+        update_fields = set(
+            payload.keys(),
+        )
 
         if user is not None:
             instance.updated_by = user
+            update_fields.add(
+                "updated_by",
+            )
 
         instance.full_clean()
-        instance.save()
+
+        if update_fields:
+            update_fields.add(
+                "updated_at",
+            )
+
+            instance.save(
+                update_fields=list(
+                    update_fields,
+                ),
+            )
 
         return instance

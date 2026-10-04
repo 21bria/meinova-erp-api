@@ -8,6 +8,7 @@ from apps.payroll.models import (
     DeductionTemplate,
     OvertimeGroup,
     PayrollGroup,
+    PayrollPolicy,
     SalaryGrade,
     SalaryLevel,
     TaxStatus,
@@ -90,6 +91,38 @@ class PayrollAssignment(BaseModel):
         decimal_places=2,
         null=True,
         blank=True,
+    )
+
+    # Upah sehari pegawai harian. Ditaruh **di sini**, bukan di kartu
+    # pegawai: kompensasi payroll yang authoritative sudah tinggal di
+    # baris ini, dan hanya baris ini yang punya rentang berlaku.
+    # Menaruhnya di Employee berarti kenaikan upah bulan depan ikut
+    # mengubah payroll bulan lalu yang dihitung ulang.
+    #
+    # Dipakai hanya kalau kebijakannya memang harian dan tarifnya
+    # memang diambil dari sini; kebijakan yang menurunkan tarif dari
+    # gaji sebulan tidak membacanya.
+    daily_rate = models.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+
+    # Kebijakan perhitungan yang dipakai pegawai ini. Kosong = ikut
+    # `PayrollSetting` perusahaannya, yaitu perilaku sebelum kebijakan
+    # ini ada — tidak ada assignment lama yang berubah angkanya.
+    #
+    # Ditaruh di assignment, bukan di kartu pegawai, karena inilah yang
+    # effective-dated: assignment yang berlaku 1 Juli membawa kebijakan
+    # barunya untuk payroll Juli, sementara payroll Juni tetap membaca
+    # assignment lama beserta kebijakan lamanya.
+    payroll_policy = models.ForeignKey(
+        PayrollPolicy,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="employee_payroll_assignments",
     )
 
     allowance_template = models.ForeignKey(
@@ -182,6 +215,11 @@ class PayrollAssignment(BaseModel):
             errors["overtime_group"] = (
                 "Overtime Group hanya boleh dipilih "
                 "jika employee eligible overtime."
+            )
+
+        if self.daily_rate is not None and self.daily_rate < 0:
+            errors["daily_rate"] = (
+                "Daily Rate tidak boleh bernilai negatif."
             )
 
         if self.is_current and self.effective_to:

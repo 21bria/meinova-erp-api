@@ -88,9 +88,20 @@ CERTIFICATE_FIELDS = {
         order=80,
     ),
 
-    "attachment": field.file(
+
+    "uploaded_file": field.file(
         tab="certificate",
         label="Attachment",
+        required=False,
+        multiple=False,
+        accept=[
+            "pdf",
+            "jpg",
+            "jpeg",
+            "png",
+            "doc",
+            "docx",
+        ],
         table=False,
         filter=False,
         search=False,

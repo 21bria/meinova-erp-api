@@ -70,13 +70,19 @@ DOCUMENT_FIELDS = {
         order=60,
     ),
 
-    "file": field.file(
+    "uploaded_file": field.file(
         tab="document",
-        label="File",
-        table=False,
-        filter=False,
-        search=False,
-        sortable=False,
+        label="Attachment",
+        required=False,
+        multiple=False,
+        accept=[
+            "pdf",
+            "jpg",
+            "jpeg",
+            "png",
+            "doc",
+            "docx",
+        ],
         order=70,
     ),
 

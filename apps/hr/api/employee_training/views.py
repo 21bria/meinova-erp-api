@@ -4,11 +4,21 @@ from apps.hr.models import EmployeeTraining
 
 from .serializers import EmployeeTrainingSerializer
 from .services import EmployeeTrainingService
+from apps.hr.api.employee.scope import EMPLOYEE_CHILD_SCOPE
 
 
 class EmployeeTrainingViewSet(
     BaseMasterViewSet,
 ):
+    # Penyaringan data per baris (kewenangan `RoleAssignment`).
+    #
+    # Lapisan yang menjawab "baris milik siapa", terpisah dari
+    # `data_subject` yang menjawab "jenis data apa". Tanpa ini,
+    # setiap pengguna terautentikasi membaca tabel ini utuh — baca
+    # memang dibiarkan terbuka `ModelPermission`, jadi cakupan baris
+    # adalah satu-satunya yang menutupnya.
+    data_scope = EMPLOYEE_CHILD_SCOPE
+
     serializer_class = EmployeeTrainingSerializer
     service_class = EmployeeTrainingService
 
@@ -39,6 +49,9 @@ class EmployeeTrainingViewSet(
                 "employee",
                 "training_category",
                 "provider",
+                "uploaded_file"
             )
-            .filter(is_deleted=False)
+            .filter(
+                is_deleted=False,
+            )
         )

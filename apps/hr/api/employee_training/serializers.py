@@ -1,6 +1,8 @@
 from rest_framework import serializers
 
 from apps.hr.models import EmployeeTraining
+from apps.uploads.api.serializers import UploadedFileSerializer
+from apps.uploads.models import UploadedFile
 
 
 class EmployeeTrainingSerializer(
@@ -23,6 +25,17 @@ class EmployeeTrainingSerializer(
         default=None,
     )
 
+    uploaded_file = serializers.PrimaryKeyRelatedField(
+        queryset=UploadedFile.objects.active(),
+        required=False,
+        allow_null=True,
+    )
+
+    uploaded_file_detail = UploadedFileSerializer(
+        source="uploaded_file",
+        read_only=True,
+    )
+
     class Meta:
         model = EmployeeTraining
         fields = "__all__"
@@ -36,6 +49,10 @@ class EmployeeTrainingSerializer(
             "deleted_at",
             "deleted_by",
             "is_deleted",
+            "employee_name",
+            "training_category_name",
+            "provider_name",
+            "uploaded_file_detail",
         ]
 
     def validate(self, attrs):
@@ -43,27 +60,47 @@ class EmployeeTrainingSerializer(
 
         start_date = attrs.get(
             "start_date",
-            getattr(instance, "start_date", None),
+            getattr(
+                instance,
+                "start_date",
+                None,
+            ),
         )
 
         end_date = attrs.get(
             "end_date",
-            getattr(instance, "end_date", None),
+            getattr(
+                instance,
+                "end_date",
+                None,
+            ),
         )
 
         expiry_date = attrs.get(
             "expiry_date",
-            getattr(instance, "expiry_date", None),
+            getattr(
+                instance,
+                "expiry_date",
+                None,
+            ),
         )
 
         duration_hours = attrs.get(
             "duration_hours",
-            getattr(instance, "duration_hours", None),
+            getattr(
+                instance,
+                "duration_hours",
+                None,
+            ),
         )
 
         score = attrs.get(
             "score",
-            getattr(instance, "score", None),
+            getattr(
+                instance,
+                "score",
+                None,
+            ),
         )
 
         errors = {}
@@ -74,8 +111,8 @@ class EmployeeTrainingSerializer(
             and end_date < start_date
         ):
             errors["end_date"] = (
-                "End Date tidak boleh lebih awal "
-                "dari Start Date."
+                "End Date cannot be earlier "
+                "than Start Date."
             )
 
         if (
@@ -84,8 +121,8 @@ class EmployeeTrainingSerializer(
             and expiry_date < end_date
         ):
             errors["expiry_date"] = (
-                "Expiry Date tidak boleh lebih awal "
-                "dari End Date."
+                "Expiry Date cannot be earlier "
+                "than End Date."
             )
 
         if (
@@ -93,15 +130,20 @@ class EmployeeTrainingSerializer(
             and duration_hours < 0
         ):
             errors["duration_hours"] = (
-                "Duration Hours tidak boleh negatif."
+                "Duration Hours cannot be negative."
             )
 
-        if score is not None and score < 0:
+        if (
+            score is not None
+            and score < 0
+        ):
             errors["score"] = (
-                "Score tidak boleh negatif."
+                "Score cannot be negative."
             )
 
         if errors:
-            raise serializers.ValidationError(errors)
+            raise serializers.ValidationError(
+                errors,
+            )
 
         return attrs

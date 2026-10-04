@@ -23,8 +23,8 @@ class OrganizationAssignmentSerializer(
         default=None,
     )
 
-    site_name = serializers.CharField(
-        source="site.name",
+    location_name = serializers.CharField(
+        source="location.name",
         read_only=True,
         default=None,
     )
@@ -110,9 +110,9 @@ class OrganizationAssignmentSerializer(
             getattr(instance, "branch", None),
         )
 
-        site = attrs.get(
-            "site",
-            getattr(instance, "site", None),
+        location = attrs.get(
+            "location",
+            getattr(instance, "location", None),
         )
 
         division = attrs.get(
@@ -157,22 +157,22 @@ class OrganizationAssignmentSerializer(
             )
 
         if (
-            site
+            location
             and company
-            and site.company_id != company.id
+            and location.company_id != company.id
         ):
-            errors["site"] = (
-                "Site harus berasal dari company yang dipilih."
+            errors["location"] = (
+                "Location harus berasal dari company yang dipilih."
             )
 
         if (
-            site
+            location
             and branch
-            and site.branch_id
-            and site.branch_id != branch.id
+            and location.branch_id
+            and location.branch_id != branch.id
         ):
-            errors["site"] = (
-                "Site harus berasal dari branch yang dipilih."
+            errors["location"] = (
+                "Location harus berasal dari branch yang dipilih."
             )
 
         if (
@@ -186,12 +186,12 @@ class OrganizationAssignmentSerializer(
 
         if (
             division
-            and site
-            and division.site_id
-            and division.site_id != site.id
+            and location
+            and division.location_id
+            and division.location_id != location.id
         ):
             errors["division"] = (
-                "Division harus berasal dari site yang dipilih."
+                "Division harus berasal dari location yang dipilih."
             )
 
         if (

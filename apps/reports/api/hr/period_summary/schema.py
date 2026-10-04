@@ -218,6 +218,10 @@ TABLE_WIDGET = dashboard.table(
         _metric_column(Metric.SCHEDULED, "Scheduled"),
         _metric_column(Metric.PRESENT, "Present"),
         _metric_column(Metric.ABSENT, "Absent"),
+        # Hari dinas tanpa tap (BT-3R). Kolomnya sendiri karena ia tidak
+        # lagi masuk Present — tanpa kolom ini Scheduled tidak bisa
+        # dicocokkan ke Present + Absent + cuti.
+        _metric_column(Metric.BUSINESS_TRIP, "Business Trip"),
 
         _metric_column(Metric.ANNUAL, "Annual"),
         _metric_column(Metric.SICK, "Sick"),
