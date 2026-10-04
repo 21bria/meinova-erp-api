@@ -7,9 +7,10 @@ from rest_framework.views import APIView
 from apps.core.responses.api import success_response
 from apps.framework.introspection import build_ui_schema
 from apps.framework.periods import DEFAULT_PERIOD_MODES, resolve_period
+from apps.framework.views.ui_schema import UISchemaMixin
 
 
-class BaseDashboardAPIView(APIView):
+class BaseDashboardAPIView(UISchemaMixin, APIView):
     """
     Dashboard per modul: susunannya dideklarasikan di `schema`, datanya
     dihitung oleh method `resolve_<key>` untuk tiap widget.
@@ -48,14 +49,14 @@ class BaseDashboardAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     framework_module = None
-    schema = {}
+    ui_schema = {}
 
     # ------------------------------------------------------------------
     # Context
     # ------------------------------------------------------------------
 
     def get_period_filter(self) -> dict:
-        for item in (self.schema or {}).get("filters", []):
+        for item in (self.ui_schema or {}).get("filters", []):
             if item.get("type") == "period":
                 return item
 
@@ -172,14 +173,14 @@ class BaseDashboardAPIView(APIView):
     def get_filter_keys(self) -> list[str]:
         return [
             item.get("key")
-            for item in (self.schema or {}).get("filters", [])
+            for item in (self.ui_schema or {}).get("filters", [])
             if item.get("key") and item.get("type") != "period"
         ]
 
     def get_multi_filter_keys(self) -> set[str]:
         return {
             item.get("key")
-            for item in (self.schema or {}).get("filters", [])
+            for item in (self.ui_schema or {}).get("filters", [])
             if item.get("key") and item.get("multiple")
         }
 
@@ -188,7 +189,7 @@ class BaseDashboardAPIView(APIView):
     # ------------------------------------------------------------------
 
     def get_widgets(self) -> list[dict]:
-        return list((self.schema or {}).get("widgets", []))
+        return list((self.ui_schema or {}).get("widgets", []))
 
     def get_requested_widgets(self, request) -> list[dict]:
         """
@@ -278,7 +279,7 @@ class BaseDashboardAPIView(APIView):
         class _SchemaView(cls):
             permission_classes = [AllowAny]
             framework_module = None
-            schema = cls.schema
+            ui_schema = cls.ui_schema
 
             def get(self, request):
                 return self.get_schema_response(request)

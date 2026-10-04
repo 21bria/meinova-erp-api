@@ -77,7 +77,7 @@ def _model_of(view_class):
 
 
 def _endpoint_of(view_class) -> str | None:
-    schema = getattr(view_class, "schema", None) or {}
+    schema = getattr(view_class, "ui_schema", None) or {}
 
     endpoint = schema.get("endpoint") if isinstance(schema, dict) else None
 

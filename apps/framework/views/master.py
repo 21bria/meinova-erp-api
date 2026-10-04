@@ -20,9 +20,10 @@ from apps.accounts.scoping import DataScopeService
 from apps.core.pagination import StandardPagination
 from apps.framework.filters import SafeSearchFilter
 from apps.framework.introspection import build_ui_schema
+from apps.framework.views.ui_schema import UISchemaMixin
 
 
-class BaseMasterViewSet(ModelViewSet):
+class BaseMasterViewSet(UISchemaMixin, ModelViewSet):
     schema_type = "crud"
     permission_classes = [IsAuthenticated, ModelPermission]
     pagination_class = StandardPagination
@@ -117,7 +118,7 @@ class BaseMasterViewSet(ModelViewSet):
     service_class = None
 
     framework_module = None
-    schema = {}
+    ui_schema = {}
 
     def get_permissions(self):
         """

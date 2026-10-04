@@ -93,10 +93,12 @@ def build_module_meta(
 
 
 def get_schema_override(viewset) -> dict:
+    # `ui_schema`, bukan `schema`: nama terakhir milik DRF/drf-spectacular
+    # (lihat `apps.framework.views.ui_schema`).
     return dict(
         getattr(
             viewset,
-            "schema",
+            "ui_schema",
             {},
         )
         or {}

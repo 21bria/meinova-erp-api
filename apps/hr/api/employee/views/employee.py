@@ -233,7 +233,7 @@ class EmployeeViewSet(BaseMasterViewSet):
         payload = dict(data)
 
         sources = self.get_export_sources()
-        fields = (self.schema or {}).get("fields", {}) or {}
+        fields = (self.ui_schema or {}).get("fields", {}) or {}
 
         for key, config in fields.items():
             if (config or {}).get("type") != "lookup":

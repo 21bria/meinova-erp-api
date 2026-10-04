@@ -2,14 +2,15 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from apps.framework.introspection import build_ui_schema
+from apps.framework.views.ui_schema import UISchemaMixin
 
-class BaseSettingAPIView(APIView):
+class BaseSettingAPIView(UISchemaMixin, APIView):
     schema_type = "setting"
     permission_classes = [IsAuthenticated]
 
     framework_module = None
     serializer_class = None
-    schema = {}
+    ui_schema = {}
 
     def get_object(self):
         raise NotImplementedError
