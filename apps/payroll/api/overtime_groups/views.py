@@ -1,5 +1,6 @@
 from apps.framework.views.master import BaseMasterViewSet
 
+from .schema import OVERTIME_GROUP_SCHEMA
 from .serializers import OvertimeGroupSerializer
 from .services import OvertimeGroupService
 
@@ -9,6 +10,7 @@ class OvertimeGroupViewSet(BaseMasterViewSet):
     service_class = OvertimeGroupService
 
     framework_module = "payroll/overtime-groups"
+    schema = OVERTIME_GROUP_SCHEMA
 
     search_fields = [
         "code",
@@ -18,6 +20,7 @@ class OvertimeGroupViewSet(BaseMasterViewSet):
 
     filterset_fields = [
         "is_active",
+        "tier_basis",
     ]
 
     ordering_fields = [

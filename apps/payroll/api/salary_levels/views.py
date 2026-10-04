@@ -21,7 +21,6 @@ class SalaryLevelViewSet(BaseMasterViewSet):
         "salary_grade__name",
         "code",
         "name",
-        "description",
     ]
 
     filterset_fields = [

@@ -2,14 +2,14 @@ from apps.payroll.models import TaxStatus
 
 
 TAX_STATUSES = [
-    ("TK0", "Tidak Kawin 0"),
-    ("TK1", "Tidak Kawin 1"),
-    ("TK2", "Tidak Kawin 2"),
-    ("TK3", "Tidak Kawin 3"),
-    ("K0", "Kawin 0"),
-    ("K1", "Kawin 1"),
-    ("K2", "Kawin 2"),
-    ("K3", "Kawin 3"),
+    ("TK/0", "Tidak Kawin 0"),
+    ("TK/1", "Tidak Kawin 1"),
+    ("TK/2", "Tidak Kawin 2"),
+    ("TK/3", "Tidak Kawin 3"),
+    ("K/0", "Kawin 0"),
+    ("K/1", "Kawin 1"),
+    ("K/2", "Kawin 2"),
+    ("K/3", "Kawin 3"),
 ]
 
 
