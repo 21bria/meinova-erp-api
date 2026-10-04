@@ -1,5 +1,14 @@
 # Safety Management Module
 
+!!! danger "📋 Blueprint — belum ada kodenya"
+    Tidak ada app `safety`. Yang terkait dan sudah ada: master `certificate-types` dan `competencies` di referensi HR.
+
+    Halaman ini rencana produk, **bukan rujukan implementasi**. Status yang berlaku hari ini: [Module Registry](../Module-Registry.md), dan langkah membangun modul baru di [Build A Module](../../02-Framework/Build-A-Module.md).
+
+---
+
+
+
 > Version: 1.0
 > Status: Active
 > Module: Safety Management

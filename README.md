@@ -79,15 +79,24 @@ cp .env.example .env
 
 Run migration
 
+> This project uses **django-tenants**. Plain `python manage.py migrate` is
+> not enough — schemas are migrated separately.
+
 ```bash
-python manage.py migrate
+python manage.py migrate_schemas --shared       # SHARED_APPS → public schema
+python manage.py migrate_schemas                # all tenant schemas
+python manage.py migrate_schemas --schema=demo  # a single tenant
 ```
 
 Run development server
 
 ```bash
 python manage.py runserver
+celery -A config worker -l info   # separate terminal
 ```
+
+Seeding a new tenant takes a specific order — see
+[`docs/08-development/Onboarding.md`](docs/08-development/Onboarding.md).
 
 ---
 
@@ -95,35 +104,48 @@ python manage.py runserver
 
 ```
 apps/
+  accounts/        RBAC: model permissions, menu access, data scoping
+  administration/  organization, references, calendar, numbering, audit
+  core/            base models, base services, response envelope
+  framework/       schema-driven UI engine, lookup, generic import
+  hr/              employees, attendance, leave, roster, travel, recruitment
+  imports/  uploads/
+  payroll/         models + seeds complete, API partial
+  tenants/         django-tenants Client / Domain
+  workflow/        generic approval engine
+  assets/ finance/ reports/ scm/   ← registered but empty
 config/
-core/
+docs/
 media/
-static/
-requirements/
 manage.py
 ```
 
 ---
 
+## Documentation
+
+```bash
+pip install mkdocs mkdocs-material
+mkdocs serve -a 127.0.0.1:8001
+```
+
+Start at [`docs/index.md`](docs/index.md). The one page every new developer
+should read first is
+[`docs/02-Framework/BE-to-FE-Pipeline.md`](docs/02-Framework/BE-to-FE-Pipeline.md) —
+the frontend is generated from backend schema, so changing a model without
+regenerating the module silently changes nothing on screen.
+
+---
+
 ## API Documentation
 
-Swagger
+| | URL |
+|---|---|
+| Swagger UI | `/api/docs/` |
+| OpenAPI schema | `/api/schema/` |
 
-```
-/api/schema/swagger-ui/
-```
-
-Redoc
-
-```
-/api/schema/redoc/
-```
-
-OpenAPI
-
-```
-/api/schema/
-```
+Requests are tenant-scoped by hostname, so use the tenant domain:
+`http://demo.localhost:8000/api/docs/`
 
 ---
 

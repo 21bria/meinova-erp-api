@@ -1,181 +1,91 @@
-# Payroll Module
+# Modul Payroll
 
-> Version: 1.0
-> Status: Active
-> Module: Payroll
-> Priority: Critical
+🟡 **Sebagian.** Master lengkap dan diseed, **belum ada model payroll run** — jadi belum ada penggajian yang benar-benar dijalankan.
 
 ---
 
-## Purpose
+## Yang sudah ada: tujuh master
 
-Payroll merupakan modul inti pada platform ERP yang bertanggung jawab untuk menghitung, memproses, mengelola, dan mendistribusikan seluruh komponen penggajian karyawan secara akurat, transparan, dan terintegrasi.
+Semuanya CRUD lengkap dengan halaman FE.
 
-Modul Payroll terhubung langsung dengan Human Resources, Finance, Organization, Workflow, Dashboard, Notification, Task, dan AI Engine sehingga seluruh proses penggajian dapat dilakukan secara otomatis dan terdokumentasi.
+| Model | Tabel | `framework_module` |
+|---|---|---|
+| `PayrollGroup` | `payroll_group` | `payroll/payroll-groups` |
+| `SalaryGrade` | `payroll_salary_grade` | `payroll/salary-grades` |
+| `SalaryLevel` | `payroll_salary_level` | `payroll/salary-levels` |
+| `AllowanceTemplate` | `payroll_allowance_template` | `payroll/allowance-templates` |
+| `DeductionTemplate` | `payroll_deduction_template` | `payroll/deduction-templates` |
+| `OvertimeGroup` | `payroll_overtime_group` | `payroll/overtime-groups` |
+| `TaxStatus` | `payroll_tax_status` | `payroll/tax-statuses` |
 
----
-
-## Scope
-
-Modul Payroll mencakup:
-
-* Payroll Master
-* Salary Components
-* Employee Salary
-* Payroll Period
-* Payroll Calculation
-* Overtime Calculation
-* Allowance
-* Deduction
-* Tax Management
-* BPJS & Insurance
-* Loan & Installment
-* Payslip
-* Payroll Approval
-* Payroll Posting
-* Payroll Reporting
-* Payroll Dashboard
-
----
-
-# Objectives
-
-Modul Payroll dikembangkan untuk:
-
-* Mengotomatisasi proses penggajian.
-* Mengurangi kesalahan perhitungan manual.
-* Mendukung berbagai skema payroll perusahaan.
-* Mengintegrasikan payroll dengan HR dan Finance.
-* Menyediakan audit trail lengkap.
-* Mempermudah proses pelaporan dan kepatuhan regulasi.
-
----
-
-# Payroll Lifecycle
-
-Seluruh proses payroll mengikuti siklus berikut:
-
-```text
-Attendance
-      ↓
-Overtime
-      ↓
-Allowance & Deduction
-      ↓
-Payroll Calculation
-      ↓
-Approval
-      ↓
-Payslip
-      ↓
-Posting to Finance
-      ↓
-Payroll History
+```bash
+tenant_command seed_payroll
 ```
 
 ---
 
-# Main Features
+## Penempatan gaji ada di HR, bukan di sini
 
-Payroll terdiri dari beberapa sub-modul:
+`PayrollAssignment` (`apps/hr/models/payroll.py`) — **effective-dated**:
 
-* Salary Component
-* Employee Salary
-* Payroll Period
-* Payroll Run
-* Payslip
-* Tax
-* BPJS & Insurance
-* Loan Management
-* Payroll Approval
-* Payroll Posting
-* Payroll Reports
+- `is_current` + `effective_from` / `effective_to`
+- Banyak baris per pegawai
+- Kenaikan gaji lewat `EmployeeAction` **menutup baris lama dan membuat baris baru**, bukan menimpa
+- Kolom non-gaji (BPJS, metode bayar) **disalin** — kenaikan gaji tidak boleh diam-diam mengosongkannya
 
-Setiap sub-modul memiliki dokumentasi tersendiri.
+Ia mewajibkan payroll group + currency + tanggal berlaku.
 
 ---
 
-# Integration
+## PTKP bukan Marital Status
 
-Payroll terintegrasi dengan:
+Jebakan yang sudah ditangani otomatis, dan layak diketahui sebelum menyentuh importer.
 
-* Human Resources
-* Organization
-* Finance
-* Attendance
-* Leave
-* Overtime
-* Workflow Engine
-* Task Engine
-* Notification Engine
-* Dashboard Engine
-* Search Engine
-* AI Engine
+`TK/0`, `K/1`, dst. adalah **`payroll.TaxStatus`**. `administration.MaritalStatus` isinya S/M/D/W.
 
----
+Karena file klien lazim menaruh PTKP di kolom bernama "marital status", `EmployeeReferenceResolver.prepare_values()` **mengalihkannya**: nilai yang gagal dicocokkan sebagai Marital Status tapi **ada** di master Tax Status dipindah ke `tax_status`, lalu status kawinnya diturunkan dari awalan kode (TK → Single, K → Married).
 
-# Dashboard
+Nilai yang tidak ketemu di kedua master tetap error seperti biasa.
 
-Dashboard Payroll menyediakan informasi seperti:
+!!! warning "PTKP hasil pengalihan otomatis tidak mewajibkan payroll group"
+    Ditandai `_tax_status_auto`. Konsekuensinya: **tax status-nya tidak tersimpan** kalau grup payroll tidak ada.
 
-* Payroll Ready
-* Payroll Process Status
-* Pending Approval
-* Monthly Payroll Cost
-* Salary Distribution
-* Tax Summary
-* BPJS Summary
-* Loan Summary
+    Isi `defaults.payroll_group` di ImportProfile kalau PTKP-nya memang mau ikut masuk.
+
+Profile `EMPLOYEE-CSV-US-PTKP` memakai satu kolom file untuk dua target: nilai asli ke `tax_status`, hasil `value_mapping` ke `marital_status`.
 
 ---
 
-# AI Capabilities
+## Bug currency yang menyentuh payroll
 
-AI dapat membantu Payroll melalui:
+!!! bug "Tidak ada tenant yang punya mata uang dasar, sejak seed pertama"
+    `apps/administration/seeds/currency.py` menulis kunci `is_base`, sementara kolomnya `is_base_currency`. `seed_reference` **membuang kunci yang bukan field model tanpa error**.
 
-* Payroll Summary
-* Salary Cost Analysis
-* Overtime Analysis
-* Tax Insight
-* Payroll Anomaly Detection
-* Payroll Forecast
-* Payroll Recommendation
+    Gagalnya jauh dari sumbernya: **import payroll** menjatuhkan currency kosong ke `Currency.is_base_currency`, tidak ketemu, dan baris penempatan gajinya **ditolak**.
+
+    Sudah dibetulkan. Tenant lama wajib `seed_administration --only=currency`.
 
 ---
 
-# Future Roadmap
+## Yang belum ada
 
-Pengembangan selanjutnya meliputi:
+| | Catatan |
+|---|---|
+| **Model payroll run** | inti modul ini — belum ada |
+| Komponen gaji per periode | |
+| Slip gaji | |
+| Perhitungan PPh 21 | `TaxStatus` sudah ada sebagai master |
+| BPJS | kolomnya ada di `PayrollAssignment`, perhitungannya belum |
+| Approval payroll | engine sudah ada dan generik |
+| Integrasi absensi → payroll | `EmployeeAttendance` dan `EmployeeOvertime` sudah terisi |
 
-* Multi-Currency Payroll
-* Multi-Country Payroll
-* Digital Payslip
-* Bank Integration
-* Tax Simulation
-* Payroll Forecast
-* AI Payroll Assistant
-* Compensation Planning
-
----
-
-## References
-
-Dokumen terkait:
-
-* Salary Component
-* Employee Salary
-* Payroll Period
-* Payroll Run
-* Payslip
-* Tax
-* BPJS
-* Loan
-* Dashboard
-* API
-* Database
+Karena belum ada model payroll run, widget **"Monthly Payroll"** dan **"Total Payroll"** di dashboard **sengaja tidak dibuat** — bukan diisi nol.
 
 ---
 
-## Notes
+## Kalau nanti dibangun
 
-Overview ini memberikan gambaran umum mengenai modul Payroll. Detail implementasi setiap fitur dijelaskan pada dokumen sub-modul yang terpisah.
+1. **Payroll run adalah dokumen berapproval** — ikuti [checklistnya](../../02-Framework/Build-A-Module.md#kalau-modulnya-dokumen-berapproval). Engine-nya generik, tidak perlu ditulis ulang.
+2. **Slip gaji sangat sensitif** — masuk `EmployeeDataPolicy`, dan wajib ditutup di **tiga jalur**: serializer, endpoint sub-resource, dan export CSV. Menutup satu tidak menutup dua lainnya.
+3. **Baca dari `PayrollAssignment` yang `is_current` pada tanggal periode**, bukan yang terbaru — payroll bulan lalu harus memakai gaji yang berlaku bulan lalu.
+4. **Jangan seed angka tarif karangan.** Pelajaran dari `SICK-STD`: angka tanpa dasar di master lebih berbahaya daripada tidak ada angka.

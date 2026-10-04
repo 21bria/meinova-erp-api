@@ -1,5 +1,14 @@
 # Finance Module
 
+!!! danger "📋 Blueprint — belum ada kodenya"
+    App `finance` terdaftar di `INSTALLED_APPS` tapi **isinya kosong**. Di beranda ia bertanda `COMING_SOON`, dan widget "Revenue vs Expense" sengaja **tidak dibuat** — bukan diisi nol.
+
+    Halaman ini rencana produk, **bukan rujukan implementasi**. Status yang berlaku hari ini: [Module Registry](../Module-Registry.md), dan langkah membangun modul baru di [Build A Module](../../02-Framework/Build-A-Module.md).
+
+---
+
+
+
 > Version: 1.0
 > Status: Active
 > Module: Finance

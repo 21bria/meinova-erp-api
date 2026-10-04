@@ -37,20 +37,14 @@ class BaseLookupView(APIView):
         lookup_class,
         request,
     ):
-        filters = {}
-
-        for field_name in lookup_class.filter_fields:
-            value = request.query_params.get(field_name)
-
-            if value in (None, ""):
-                continue
-
-            filters[field_name] = value
-
-        if filters:
-            queryset = queryset.filter(**filters)
-
-        return queryset
+        # Didelegasikan ke lookup-nya supaya turunan seperti
+        # OrganizationScopedLookup bisa memakai aturan penyaringan
+        # sendiri — kalau logikanya ditulis ulang di sini, override
+        # pada lookup tidak akan pernah terpakai.
+        return lookup_class.apply_filters(
+            queryset,
+            request.query_params,
+        )
 
     def apply_search(
         self,
@@ -95,6 +89,12 @@ class BaseLookupView(APIView):
         lookup_class = self.get_lookup(lookup_name)
 
         queryset = lookup_class.get_queryset()
+
+        # Cakupan data lebih dulu, sebelum filter dropdown dan pencarian.
+        # Urutannya tidak mengubah hasil, tapi menaruhnya di depan yang
+        # membuat aturannya terbaca: yang dipilih pengguna hanya boleh
+        # **mempersempit** apa yang sudah boleh ia lihat.
+        queryset = lookup_class.apply_scope(queryset, request)
 
         queryset = self.apply_filters(
             queryset,

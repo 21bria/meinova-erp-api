@@ -5,6 +5,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from apps.framework.introspection import build_ui_schema
+from apps.framework.views.dashboard import BaseDashboardAPIView
 from apps.framework.views.master import BaseMasterViewSet
 from apps.framework.views.tree import BaseTreeAPIView
 from apps.framework.views.setting import BaseSettingAPIView
@@ -13,6 +14,7 @@ FRAMEWORK_BASES = (
     BaseMasterViewSet,
     BaseTreeAPIView,
     BaseSettingAPIView,
+    BaseDashboardAPIView,
 )
 
 def _all_subclasses(cls):

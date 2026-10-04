@@ -1,5 +1,14 @@
 # Mining Operations Module
 
+!!! danger "📋 Blueprint — belum ada kodenya"
+    Tidak ada app `mining`. Yang sudah menangani kebutuhan operasional tambang hari ini adalah modul **HR** (roster site, travel request, absensi mesin fingerprint).
+
+    Halaman ini rencana produk, **bukan rujukan implementasi**. Status yang berlaku hari ini: [Module Registry](../Module-Registry.md), dan langkah membangun modul baru di [Build A Module](../../02-Framework/Build-A-Module.md).
+
+---
+
+
+
 > Version: 1.0
 > Status: Active
 > Module: Mining Operations

@@ -1,14 +1,32 @@
-from rest_framework.permissions import IsAuthenticated
+from apps.accounts.permissions import IsSecurityAdmin
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from rest_framework.permissions import IsAuthenticated
+
 from apps.framework.views.tree import BaseTreeAPIView
+from .access import MenuAccessService
 from .serializers import MenuPermissionSaveSerializer
 from .services import MenuPermissionService
 
 
-class MenuPermissionTreeView(BaseTreeAPIView):
+class MyMenuAccessView(APIView):
+    """
+    Menu yang boleh dilihat pengguna yang sedang login.
+
+    Dibaca sidebar. **Bukan penjagaan** — halamannya tetap bisa dibuka
+    lewat URL langsung, dan yang menolak sungguhan tetap API tiap
+    resource. Ini soal tidak menyodorkan layar yang tidak relevan.
+    """
+
     permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response(MenuAccessService.visible_for(request.user))
+
+
+class MenuPermissionTreeView(BaseTreeAPIView):
+    permission_classes = [IsSecurityAdmin]
 
     framework_module = "administration/security/menu-permission"
     schema_type = "tree"
@@ -48,7 +66,7 @@ class MenuPermissionTreeView(BaseTreeAPIView):
 
 
 class MenuPermissionSaveView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsSecurityAdmin]
 
     def post(self, request):
         serializer = MenuPermissionSaveSerializer(data=request.data)
@@ -57,6 +75,7 @@ class MenuPermissionSaveView(APIView):
         result = MenuPermissionService.save(
             role_id=serializer.validated_data["role"],
             menu_ids=serializer.validated_data["menus"],
+            rules=serializer.validated_data.get("rules"),
         )
 
         return Response(result)

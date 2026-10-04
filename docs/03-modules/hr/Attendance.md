@@ -1,5 +1,8 @@
 # HR Attendance Architecture
 
+!!! note "Aturan toleransi & keterlambatan berat ada di halaman lain"
+    Halaman ini menjelaskan **master jadwal** (Work Schedule, Shift, Work Calendar, Holiday). Toleransi keterlambatan, ambang lembur, dan aturan "telat berat wajib mengambil cuti" ada di `AttendancePolicy` — peninjauan atasan beserta tombol Waive / Require Leave / Issue Leave ada di **[Saldo Awal & Pengecualian Presensi](Leave-Opening-Attendance-Exception.md)** §6, rancangan awalnya di **[Proposal: Kewajiban Cuti dari Presensi](Attendance-Leave-Obligation-Proposal.md)**.
+
 ## Overview
 
 Attendance terdiri dari beberapa master yang saling berhubungan.

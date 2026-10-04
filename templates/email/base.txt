@@ -1,0 +1,32 @@
+{% comment %}
+Versi teks.
+
+Bukan formalitas: sebagian klien email di lapangan dan hampir semua
+pratinjau notifikasi (ponsel terkunci, jam tangan) menampilkan bagian
+ini, dan email yang bagian teksnya kosong terbaca sebagai pesan kosong
+sebelum sempat dibuka.
+
+Komentar di berkas template WAJIB memakai blok comment seperti ini, bukan
+kurung-pagar satu baris: yang terakhir hanya berlaku satu baris, dan
+komentar multi-baris yang ditulis begitu ikut terkirim sebagai isi email.
+Sudah kena sekali, dan di versi teks inilah akibatnya paling parah -
+paragraf penjelasan ini muncul sebagai kalimat pertama yang dibaca
+penerima.
+
+Isinya memakai body_text, yaitu teks asli yang ditulis penyunting
+template - BUKAN hasil striptags dari versi HTML-nya. Sudah kena sekali:
+striptags membuang penutup paragraf tanpa menyisakan pemisah, jadi
+seluruh surat menempel jadi satu paragraf panjang. autoescape off
+dipakai supaya entitas HTML kembali jadi karakter biasa (&amp; jadi &),
+supaya nama yang memuat "&" tidak terbaca sebagai kode.
+{% endcomment %}{{ subject }}
+{% autoescape off %}
+{{ body_text }}
+{% if action_url %}
+Buka: {{ action_url }}
+{% endif %}
+--
+{% if footer_text %}{{ footer_text }}
+
+{% endif %}Email ini dikirim otomatis oleh {{ app_name }}. Mohon tidak membalas ke alamat pengirim.
+{% endautoescape %}

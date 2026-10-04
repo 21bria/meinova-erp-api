@@ -10,7 +10,8 @@ urlpatterns = [
     path("roles/", include("apps.accounts.api.roles.urls")),
     path("permissions/", include("apps.accounts.api.permissions.urls")),
     path("menu-permissions/", include("apps.accounts.api.menu_permissions.urls")),
-    path("data-permissions/", include("apps.accounts.api.data_permissions.urls")),
+    path("role-permissions/", include("apps.accounts.api.role_permissions.urls")),
+    path("user-roles/", include("apps.accounts.api.user_roles.urls")),
     path("api-keys/", include("apps.accounts.api.api_keys.urls")),
 
     # Future

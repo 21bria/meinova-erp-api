@@ -30,6 +30,12 @@ theme:
         icon: material/weather-sunny
         name: Switch to light mode
 
+# README.md hanya penunjuk arah saat membaca repo lewat file browser;
+# halaman depan situsnya index.md. Tanpa baris ini mkdocs memperingatkan
+# keduanya bentrok dan build --strict gagal.
+exclude_docs: |
+  README.md
+
 markdown_extensions:
   - admonition
   - attr_list
@@ -49,6 +55,13 @@ markdown_extensions:
 nav:
   - Home: index.md
 
+  - Mulai Dari Sini:
+      - Onboarding: 08-development/Onboarding.md
+      - Pipeline BE ke FE: 02-Framework/BE-to-FE-Pipeline.md
+      - Membuat Modul Baru: 02-Framework/Build-A-Module.md
+      - Checklist: 08-development/Checklist.md
+      - Registry Modul: 03-modules/Module-Registry.md
+
   - Overview:
       - Vision: 00-overview/Vision.md
       - Version: 00-overview/Version.md
@@ -64,67 +77,173 @@ nav:
       - Multi Tenant: 01-architecture/Multi-Tenant.md
       - Authentication: 01-architecture/Authentication.md
       - Authorization: 01-architecture/Authorization.md
+      - Queue & Task: 01-architecture/Queue.md
+      - Cache: 01-architecture/Cache.md
+      - File Storage: 01-architecture/File-Storage.md
+      - Logging: 01-architecture/Logging.md
+      - Workflow Engine: 01-architecture/Workflow-Engine.md
       - Dashboard Engine: 01-architecture/Dashboard-Engine.md
       - Widget Engine: 01-architecture/Widget-Engine.md
-      - Workflow Engine: 01-architecture/Workflow-Engine.md
       - Notification Engine: 01-architecture/Notification-Engine.md
       - Task Engine: 01-architecture/Task-Engine.md
       - Search Engine: 01-architecture/Search-Engine.md
       - AI Engine: 01-architecture/AI-Engine.md
 
   - Framework:
-      - Overview: 02-framework/Overview.md
-      - Folder Structure: 02-framework/Folder-Structure.md
-      - Generator: 02-framework/Generator.md
-      - Schema: 02-framework/Schema.md
-      - Lookup: 02-framework/Lookup.md
-      - Base Models: 02-framework/Base-Models.md
-      - Base Services: 02-framework/Base-Services.md
-      - Base ViewSets: 02-framework/Base-ViewSets.md
-      - Permissions: 02-framework/Permissions.md
-      - Middleware: 02-framework/Middleware.md
-      - Validation: 02-framework/Validation.md
-      - Error Handling: 02-framework/Error-Handling.md
+      - Overview: 02-Framework/Overview.md
+      - Siklus Request: 02-Framework/Request-Lifecycle.md
+      - Pipeline BE ke FE: 02-Framework/BE-to-FE-Pipeline.md
+      - Membuat Modul Baru: 02-Framework/Build-A-Module.md
+      - Base Classes: 02-Framework/Base-Classes.md
+      - Schema DSL: 02-Framework/Schema.md
+      - Lookup: 02-Framework/Lookup.md
+      - Permission: 02-Framework/Permission.md
+      - Generator Frontend: 02-Framework/Generator.md
+
+  - Alur Bisnis:
+      - Overview: 09-business-flows/Overview.md
+      - "People, Access & Organization Framework": 09-business-flows/People-Access-Organization-Framework.md
+      - "Urutan Entry: Employee sampai Cuti": 09-business-flows/Employee-Onboarding-Flow.md
+      - "Menentukan Saldo Cuti": 09-business-flows/Leave-Balance-Setup.md
+      - "Go-Live Cuti": 09-business-flows/Leave-Go-Live.md
+      - Persetujuan Dokumen: 09-business-flows/Document-Approval.md
+      - Cuti: 09-business-flows/Leave-Request.md
+      - Travel Request: 09-business-flows/Travel-Request.md
+      - Roster: 09-business-flows/Roster-Management.md
+      - Employee Action: 09-business-flows/Employee-Action.md
+
+  - HR Management:
+      - Overview: 10-hr-management/Overview.md
+      - Organization Management: 10-hr-management/Organization.md
+      - Head Office vs Site: 10-hr-management/HO-vs-Site.md
+      - Work Calendar & Holiday: 10-hr-management/Work-Calendar.md
+      - Shift & Jam Kerja: 10-hr-management/Shift.md
+      - Roster Site: 10-hr-management/Roster.md
+      - Policy Resolution: 10-hr-management/Policy-Resolution.md
+      - Attendance: 10-hr-management/Attendance.md
+      - Attendance — Aturan & Perhitungan: 10-hr-management/Attendance-Rules.md
+      - Attendance — Penutupan & Batas Modul: 10-hr-management/Attendance-Closing.md
+      - Attendance — Contoh Manajemen: 10-hr-management/Attendance-Examples.md
+      - Leave Management: 10-hr-management/Leave.md
+      - Permission Management: 10-hr-management/Permission.md
+      - Overtime Management: 10-hr-management/Overtime.md
+      - Roles & Data Scope: 10-hr-management/Roles-And-Data-Scope.md
+      - Demo Dataset: 10-hr-management/Demo-Dataset.md
+      - Technical Reference: 10-hr-management/Technical-Reference.md
 
   - Modules:
-      - Organization: 03-modules/organization/Overview.md
+      - Registry Modul: 03-modules/Module-Registry.md
       - Human Resources:
           - Overview: 03-modules/hr/Overview.md
           - Employees: 03-modules/hr/Employees.md
           - Attendance: 03-modules/hr/Attendance.md
-      - Payroll: 03-modules/payroll/Overview.md
-      - Finance: 03-modules/finance/Overview.md
-      - SCM: 03-modules/scm/Overview.md
-      - Mining: 03-modules/mining/Overview.md
-      - Safety: 03-modules/safety/Overview.md
-      - Analytics: 03-modules/analytics/Overview.md
+          - Leave: 03-modules/hr/Leave.md
+          - Saldo Awal & Pengecualian Presensi: 03-modules/hr/Leave-Opening-Attendance-Exception.md
+          - Travel & Rotation: 03-modules/hr/Travel-Rotation.md
+          - Training: 03-modules/hr/Training.md
+          - Recruitment: 03-modules/hr/Recruitment.md
+          - Medical: 03-modules/hr/Medical.md
+          - Performance: 03-modules/hr/Performance.md
+          - Dashboard: 03-modules/hr/Dashboard.md
+          - API: 03-modules/hr/API.md
+          - Database: 03-modules/hr/Database.md
+          - Future: 03-modules/hr/Future.md
+          - "Proposal: Roster Management": 03-modules/hr/Roster-Management-Proposal.md
+          - "Proposal: Saldo Cuti": 03-modules/hr/Leave-Balance-Proposal.md
+          - "Proposal: Kewajiban Cuti dari Presensi": 03-modules/hr/Attendance-Leave-Obligation-Proposal.md
+      - Organization:
+          - Overview: 03-modules/organization/01-Overview.md
+          - Structure: 03-modules/organization/02-Structure.md
+          - Workflow: 03-modules/organization/03-Workflow.md
+          - Company: 03-modules/organization/04-Company.md
+          - Branch: 03-modules/organization/05-Branch.md
+          - Location: 03-modules/organization/06-Site.md
+          - Division: 03-modules/organization/07-Division.md
+          - Department: 03-modules/organization/08-Department.md
+          - Section: 03-modules/organization/09-Section.md
+          - Position: 03-modules/organization/10-Position.md
+          - Database: 03-modules/organization/11-Database.md
+          - API: 03-modules/organization/12-API.md
+          - Dashboard: 03-modules/organization/13-Dashboard.md
+          - Future: 03-modules/organization/99-Future.md
+      - Payroll:
+          - Overview: 03-modules/payroll/Overview.md
+          - API: 03-modules/payroll/API.md
+          - Database: 03-modules/payroll/Database.md
+          - Workflow: 03-modules/payroll/Workflow.md
+          - Dashboard: 03-modules/payroll/Dashboard.md
+          - Future: 03-modules/payroll/Future.md
+      - "Blueprint (belum ada kodenya)":
+          - Finance: 03-modules/finance/Overview.md
+          - SCM: 03-modules/scm/Overview.md
+          - Mining: 03-modules/mining/Overview.md
+          - Safety: 03-modules/safety/Overview.md
+          - Analytics: 03-modules/analytics/Overview.md
+          - Asset: 03-modules/asset/Overview.md
+          - Inventory: 03-modules/inventory/Overview.md
+          - Maintenance: 03-modules/maintenance/Overview.md
+          - Fleet: 03-modules/fleet/Overview.md
+          - Fuel: 03-modules/fuel/Overview.md
+          - Laboratory: 03-modules/laboratory/Overview.md
+          - Project: 03-modules/project/Overview.md
+          - CRM: 03-modules/crm/Overview.md
 
   - UI UX:
-      - Workspace: 04-ui-ux/Workspace.md
-      - Dashboard: 04-ui-ux/Dashboard.md
       - Design System: 04-ui-ux/Design-System.md
       - Components: 04-ui-ux/Components.md
+      - Forms: 04-ui-ux/Forms.md
+      - Tables: 04-ui-ux/Tables.md
+      - Workspace: 04-ui-ux/Workspace.md
+      - Dashboard: 04-ui-ux/Dashboard.md
+      - Charts: 04-ui-ux/Charts.md
+      - Navigation: 04-ui-ux/Navigation.md
+      - Colors: 04-ui-ux/Colors.md
+      - Icons: 04-ui-ux/Icons.md
+      - Theme: 04-ui-ux/Theme.md
+      - Accessibility: 04-ui-ux/Accessibility.md
 
   - API:
       - Standards: 05-api/Standards.md
+      - Authentication: 05-api/Authentication.md
       - Error Response: 05-api/Error-Response.md
+      - Validation: 05-api/Validation.md
       - Pagination: 05-api/Pagination.md
       - Filtering: 05-api/Filtering.md
+      - Sorting: 05-api/Sorting.md
+      - Upload: 05-api/Upload.md
+      - Versioning: 05-api/Versioning.md
+      - Webhook: 05-api/Webhook.md
 
   - Database:
       - Database Design: 06-database/Database-Design.md
       - Naming Convention: 06-database/Naming-Convention.md
       - ERD: 06-database/ERD.md
       - Migration: 06-database/Migration.md
+      - Seed Data: 06-database/Seed-Data.md
+      - Indexing: 06-database/Indexing.md
+      - Performance: 06-database/Performance.md
+      - Partitioning: 06-database/Partitioning.md
+      - Backup: 06-database/Backup.md
 
   - Deployment:
       - Local: 07-deployment/Local.md
       - Docker: 07-deployment/Docker.md
       - CI CD: 07-deployment/CI-CD.md
       - Production: 07-deployment/Production.md
+      - Monitoring: 07-deployment/Monitoring.md
+      - Scaling: 07-deployment/Scaling.md
+      - HA: 07-deployment/HA.md
+      - Backup: 07-deployment/Backup.md
+      - Disaster Recovery: 07-deployment/Disaster-Recovery.md
 
   - Development:
+      - Onboarding: 08-development/Onboarding.md
+      - Contributing: 08-development/Contributing.md
       - Coding Standards: 08-development/Coding-Standards.md
-      - Git Workflow: 08-development/Git-Workflow.md
-      - Testing: 08-development/Testing.md
       - Checklist: 08-development/Checklist.md
+      - Testing: 08-development/Testing.md
+      - Git Workflow: 08-development/Git-Workflow.md
+      - Branching: 08-development/Branching.md
+      - Code Review: 08-development/Code-Review.md
+      - Pull Request: 08-development/Pull-Request.md
+      - Release: 08-development/Release.md

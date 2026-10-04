@@ -1,6 +1,18 @@
-from . import action, field, layout, permission, tabs, ui, validator, widget, workflow
+from . import (
+    action,
+    dashboard,
+    field,
+    importer,
+    layout,
+    permission,
+    tabs,
+    ui,
+    validator,
+    widget,
+    workflow,
+)
 
 __all__ = [
-    "action", "field", "layout", "permission", "tabs",
-    "ui", "validator", "widget", "workflow",
+    "action", "dashboard", "field", "importer", "layout", "permission",
+    "tabs", "ui", "validator", "widget", "workflow",
 ]

@@ -1,0 +1,94 @@
+{% comment %}
+Kerangka HTML email.
+
+Tinggal di repo, bukan di database — lihat docstring
+`apps/notifications/models/template.py`. Yang disunting orang dari layar
+adalah isi suratnya; kerangka ini yang membuatnya terbaca.
+
+Komentar di berkas ini WAJIB memakai blok comment seperti ini, bukan
+kurung-pagar satu baris: yang terakhir hanya berlaku satu baris, dan
+komentar multi-baris yang ditulis begitu ikut terkirim sebagai isi
+email. Sudah kena sekali — seluruh paragraf ini
+tampil di badan surat penerima, dan di versi teksnya ia muncul paling
+atas sebagai kalimat pertama yang dibaca orang.
+
+Tiga hal yang terlihat kuno di sini dan memang harus begitu:
+
+- Tabel untuk tata letak, bukan flexbox/grid. Outlook di Windows
+  merender lewat mesin Word dan tidak mengenal keduanya; tata letak yang
+  benar di semua klien lain akan berantakan justru di klien yang paling
+  banyak dipakai kantor.
+- Gaya inline, bukan blok style terpisah. Gmail membuang blok style pada
+  sebagian tampilan, dan surat yang kehilangan seluruh gayanya terbaca
+  seperti email phishing.
+- Tanpa gambar sebagai penyampai isi. Sebagian besar klien memblokir
+  gambar sampai penerimanya menekan "tampilkan"; logo boleh hilang,
+  kalimatnya tidak.
+{% endcomment %}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0;padding:0;background-color:#f4f5f7;">
+  <tr>
+    <td align="center" style="padding:24px 12px;">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:#ffffff;border-radius:8px;border:1px solid #e4e6eb;">
+
+        {% comment %}Kop{% endcomment %}
+        <tr>
+          <td style="padding:24px 32px 8px 32px;border-bottom:1px solid #eef0f3;">
+            {% if logo_url %}
+              <img src="{{ logo_url }}" alt="{{ app_name }}" height="32" style="height:32px;display:block;border:0;">
+            {% else %}
+              <span style="font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;color:#1f2937;">{{ app_name }}</span>
+            {% endif %}
+          </td>
+        </tr>
+
+        {% comment %}Judul{% endcomment %}
+        <tr>
+          <td style="padding:24px 32px 0 32px;font-family:Arial,Helvetica,sans-serif;font-size:18px;line-height:26px;font-weight:bold;color:#111827;">
+            {{ subject }}
+          </td>
+        </tr>
+
+        {% comment %}Isi, sudah di-escape di render.to_html(){% endcomment %}
+        <tr>
+          <td style="padding:12px 32px 8px 32px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:22px;color:#374151;">
+            {{ body_html }}
+          </td>
+        </tr>
+
+        {% comment %}Tombol. Ditulis sebagai tabel supaya punya latar di
+        Outlook, dan tetap sebuah anchor supaya alamatnya bisa disalin.
+        {% endcomment %}
+        {% if action_url %}
+        <tr>
+          <td style="padding:8px 32px 24px 32px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td bgcolor="#2563eb" style="border-radius:6px;">
+                  <a href="{{ action_url }}" style="display:inline-block;padding:10px 20px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;color:#ffffff;text-decoration:none;">{{ action_label }}</a>
+                </td>
+              </tr>
+            </table>
+            {% comment %}Alamatnya ikut ditulis apa adanya: sebagian klien email
+            perusahaan menonaktifkan tautan pada email dari luar, dan tanpa
+            baris ini penerimanya tidak punya cara membukanya.{% endcomment %}
+            <p style="margin:12px 0 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:#6b7280;">
+              Kalau tombolnya tidak bisa ditekan, salin alamat ini ke browser:<br>
+              <span style="color:#2563eb;word-break:break-all;">{{ action_url }}</span>
+            </p>
+          </td>
+        </tr>
+        {% endif %}
+
+        {% comment %}Kaki{% endcomment %}
+        <tr>
+          <td style="padding:16px 32px 24px 32px;border-top:1px solid #eef0f3;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:#6b7280;">
+            {% if footer_text %}
+              {{ footer_text|linebreaksbr }}<br><br>
+            {% endif %}
+            Email ini dikirim otomatis oleh {{ app_name }}. Mohon tidak membalas ke alamat pengirim.
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>

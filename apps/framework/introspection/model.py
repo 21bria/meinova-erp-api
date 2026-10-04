@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from django.db import models
+
 
 SYSTEM_FIELDS = {
     "id",
@@ -12,7 +15,43 @@ SYSTEM_FIELDS = {
 }
 
 
+def is_uploaded_file_relation(field) -> bool:
+    """
+    Mengecek apakah field merupakan relasi ke Upload Framework.
+
+    Mendukung ForeignKey maupun OneToOneField ke:
+
+        uploads.UploadedFile
+    """
+    if not isinstance(
+        field,
+        (
+            models.ForeignKey,
+            models.OneToOneField,
+        ),
+    ):
+        return False
+
+    related_model = getattr(
+        field,
+        "related_model",
+        None,
+    )
+
+    if related_model is None:
+        return False
+
+    return (
+        related_model._meta.label_lower
+        == "uploads.uploadedfile"
+    )
+
+
 def model_field_type(field):
+    # Harus diperiksa sebelum ForeignKey umum.
+    if is_uploaded_file_relation(field):
+        return "file"
+
     if isinstance(field, models.EmailField):
         return "email"
 
@@ -92,6 +131,9 @@ def is_table_field(field):
     if field.name in SYSTEM_FIELDS:
         return False
 
+    if is_uploaded_file_relation(field):
+        return False
+
     return not isinstance(
         field,
         (
@@ -105,6 +147,9 @@ def is_table_field(field):
 
 
 def is_filter_field(field):
+    if is_uploaded_file_relation(field):
+        return False
+
     return isinstance(
         field,
         (
@@ -127,6 +172,9 @@ def is_search_field(field):
 
 
 def is_sortable_field(field):
+    if is_uploaded_file_relation(field):
+        return False
+
     return not isinstance(
         field,
         (
@@ -140,6 +188,9 @@ def is_sortable_field(field):
 
 
 def is_exportable_field(field):
+    if is_uploaded_file_relation(field):
+        return False
+
     return not isinstance(
         field,
         (
@@ -154,7 +205,10 @@ def is_quick_filter(field):
     if field.name == "is_active":
         return True
 
-    return isinstance(field, models.BooleanField)
+    return isinstance(
+        field,
+        models.BooleanField,
+    )
 
 
 def get_field_default(field):
@@ -170,7 +224,11 @@ def get_field_default(field):
 
 
 def get_field_choices(field):
-    choices = getattr(field, "choices", None)
+    choices = getattr(
+        field,
+        "choices",
+        None,
+    )
 
     if not choices:
         return None
@@ -184,6 +242,33 @@ def get_field_choices(field):
     ]
 
 
+def build_uploaded_file_options(field) -> dict:
+    """
+    Konfigurasi default Upload Framework.
+
+    Konfigurasi dari schema override seperti field.file(...)
+    tetap dapat menimpa nilai default ini.
+    """
+    return {
+        "type": "file",
+        "widget": "upload",
+        "required": is_required_field(field),
+        "multiple": False,
+        "category": "attachment",
+        "public": False,
+        "preview": True,
+        "download": True,
+        "replace": True,
+        "delete": True,
+        "upload_endpoint": "/api/uploads/",
+        "table": False,
+        "filter": False,
+        "search": False,
+        "sortable": False,
+        "export": False,
+    }
+
+
 def inspect_model(model):
     fields = {}
 
@@ -191,9 +276,12 @@ def inspect_model(model):
         if getattr(field, "auto_created", False):
             continue
 
-        if not getattr(field, "concrete", False) and not isinstance(
-            field,
-            models.ManyToManyField,
+        if (
+            not getattr(field, "concrete", False)
+            and not isinstance(
+                field,
+                models.ManyToManyField,
+            )
         ):
             continue
 
@@ -206,11 +294,19 @@ def inspect_model(model):
             "type": field_type,
             "widget": field_type,
             "label": str(
-                getattr(field, "verbose_name", None)
+                getattr(
+                    field,
+                    "verbose_name",
+                    None,
+                )
                 or humanize(field.name)
             ),
             "required": is_required_field(field),
-            "form": not getattr(field, "auto_created", False),
+            "form": not getattr(
+                field,
+                "auto_created",
+                False,
+            ),
             "table": is_table_field(field),
             "filter": is_filter_field(field),
             "search": is_search_field(field),
@@ -219,18 +315,34 @@ def inspect_model(model):
         }
 
         default = get_field_default(field)
+
         if default is not None:
             options["default"] = default
 
-        help_text = getattr(field, "help_text", None)
-        if help_text:
-            options["help_text"] = str(help_text)
+        help_text = getattr(
+            field,
+            "help_text",
+            None,
+        )
 
-        max_length = getattr(field, "max_length", None)
+        if help_text:
+            options["help_text"] = str(
+                help_text,
+            )
+
+        max_length = getattr(
+            field,
+            "max_length",
+            None,
+        )
+
         if max_length:
             options["max_length"] = max_length
 
-        if isinstance(field, models.DecimalField):
+        if isinstance(
+            field,
+            models.DecimalField,
+        ):
             options.update(
                 {
                     "max_digits": field.max_digits,
@@ -239,6 +351,7 @@ def inspect_model(model):
             )
 
         choices = get_field_choices(field)
+
         if choices:
             options.update(
                 {
@@ -249,7 +362,13 @@ def inspect_model(model):
                 }
             )
 
-        if isinstance(
+        # Upload Framework harus diproses sebelum lookup umum.
+        if is_uploaded_file_relation(field):
+            options.update(
+                build_uploaded_file_options(field)
+            )
+
+        elif isinstance(
             field,
             (
                 models.ForeignKey,

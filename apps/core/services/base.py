@@ -13,6 +13,32 @@ class BaseService:
 
     model: type[models.Model] | None = None
 
+    # Jejak audit ditulis dari sini — satu tempat, bukan ditaburkan di
+    # tiap service. Seluruh mutasi di codebase ini memang lewat sini,
+    # jadi menyambungkannya di titik ini menutup seluruh modul sekaligus.
+    #
+    # Dimatikan lewat `audit_enabled = False` pada service yang datanya
+    # memang tidak menarik dicatat — ledger append-only, misalnya, sudah
+    # jadi jejaknya sendiri.
+    audit_enabled: bool = True
+
+    @classmethod
+    def _audit(cls, *, instance, action, user=None, before=None, after=None):
+        if not cls.audit_enabled:
+            return
+
+        from apps.administration.api.audit.services.audit_service import (
+            AuditTrailService,
+        )
+
+        AuditTrailService.record(
+            instance=instance,
+            action=action,
+            user=user,
+            before=before,
+            after=after,
+        )
+
     @classmethod
     def get_model(cls) -> type[models.Model]:
         if cls.model is None:
@@ -32,6 +58,45 @@ class BaseService:
             cls.get_queryset(),
             pk=pk,
         )
+
+    @classmethod
+    def _split_many_to_many(
+        cls,
+        data: dict[str, Any],
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        """
+        Memisahkan kolom ManyToMany dari kolom biasa.
+
+        Django melarang `setattr` pada m2m — *"Direct assignment to the
+        forward side of a many-to-many set is prohibited"* — dan
+        barisnya memang tidak bisa ditulis sebelum induknya punya pk.
+        Jadi m2m dikeluarkan dari data, dipasang lewat `.set()` sesudah
+        `save()`.
+
+        Kolom yang **tidak disebut** `data` tidak ikut terbawa ke sini,
+        dan itulah yang membuat PATCH parsial tidak menghapus relasi
+        yang sudah ada: yang tidak dikirim tidak disentuh.
+        """
+        names = {
+            field.name for field in cls.get_model()._meta.many_to_many
+        }
+
+        if not names:
+            return data, {}
+
+        plain = {k: v for k, v in data.items() if k not in names}
+        related = {k: v for k, v in data.items() if k in names}
+
+        return plain, related
+
+    @staticmethod
+    def _apply_many_to_many(instance, values: dict[str, Any]) -> None:
+        """
+        `None` dan list kosong sama-sama berarti **kosongkan** — itu
+        pilihan yang memang dikirim pengguna, bukan ketiadaan kirim.
+        """
+        for name, value in values.items():
+            getattr(instance, name).set(value or [])
 
     @classmethod
     def before_create(
@@ -70,6 +135,8 @@ class BaseService:
             **kwargs,
         )
 
+        prepared_data, related_data = cls._split_many_to_many(prepared_data)
+
         instance = model(**prepared_data)
 
         if hasattr(instance, "full_clean"):
@@ -77,11 +144,24 @@ class BaseService:
 
         instance.save()
 
-        return cls.after_create(
+        # Sesudah `save()` (butuh pk) tapi sebelum `after_create`,
+        # supaya hook turunan melihat relasinya sudah terpasang.
+        cls._apply_many_to_many(instance, related_data)
+
+        result = cls.after_create(
             instance=instance,
             user=user,
             **kwargs,
         )
+
+        cls._audit(
+            instance=result or instance,
+            action="create",
+            user=user,
+            after=cls._snapshot(result or instance),
+        )
+
+        return result
 
     @classmethod
     def before_update(
@@ -114,12 +194,16 @@ class BaseService:
         user=None,
         **kwargs,
     ):
+        before_values = cls._snapshot(instance)
+
         prepared_data = cls.before_update(
             instance=instance,
             data=dict(data),
             user=user,
             **kwargs,
         )
+
+        prepared_data, related_data = cls._split_many_to_many(prepared_data)
 
         for field_name, value in prepared_data.items():
             setattr(instance, field_name, value)
@@ -129,11 +213,33 @@ class BaseService:
 
         instance.save()
 
-        return cls.after_update(
+        cls._apply_many_to_many(instance, related_data)
+
+        result = cls.after_update(
             instance=instance,
             user=user,
             **kwargs,
         )
+
+        target = result or instance
+
+        # Hanya kolom yang berubah. Menyalin seluruh record membuat
+        # perubahan satu kolom tenggelam di antara empat puluh yang sama.
+        changed_before, changed_after = cls._diff(
+            before_values,
+            cls._snapshot(target),
+        )
+
+        if changed_after:
+            cls._audit(
+                instance=target,
+                action="update",
+                user=user,
+                before=changed_before,
+                after=changed_after,
+            )
+
+        return result
 
     @classmethod
     def before_delete(
@@ -170,6 +276,18 @@ class BaseService:
             **kwargs,
         )
 
+        before_values = cls._snapshot(instance)
+
+        # Dicatat **sebelum** dihapus: sesudahnya `instance.pk` sudah
+        # `None`, dan baris jejak yang tidak menunjuk objek apa pun
+        # tidak bisa ditelusuri.
+        cls._audit(
+            instance=instance,
+            action="delete",
+            user=user,
+            before=before_values,
+        )
+
         instance.delete()
 
         cls.after_delete(
@@ -177,3 +295,22 @@ class BaseService:
             user=user,
             **kwargs,
         )
+    # ------------------------------------------------------------------
+    # Pembantu audit
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _snapshot(instance) -> dict:
+        from apps.administration.api.audit.services.audit_service import (
+            AuditTrailService,
+        )
+
+        return AuditTrailService.snapshot(instance)
+
+    @staticmethod
+    def _diff(before: dict, after: dict) -> tuple[dict, dict]:
+        from apps.administration.api.audit.services.audit_service import (
+            AuditTrailService,
+        )
+
+        return AuditTrailService.changes(before, after)

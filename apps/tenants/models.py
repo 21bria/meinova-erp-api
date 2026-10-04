@@ -41,7 +41,7 @@ class Plan(models.Model):
 
     max_users = models.PositiveIntegerField(default=10)
     max_companies = models.PositiveIntegerField(default=1)
-    max_sites = models.PositiveIntegerField(default=1)
+    max_locations = models.PositiveIntegerField(default=1)
 
     is_active = models.BooleanField(default=True)
 

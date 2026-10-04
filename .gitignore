@@ -75,3 +75,35 @@ build/
 # ==========================================
 *.pid
 *.sock
+
+# ==========================================
+# MkDocs build output (mkdocs.yml default site_dir)
+# ==========================================
+/site/
+
+# ==========================================
+# Celery beat runtime state
+# ==========================================
+celerybeat-schedule
+celerybeat-schedule.*
+celerybeat.pid
+
+# ==========================================
+# Claude Code machine-local settings
+# (was only ignored via ~/.config/git/ignore, so it would
+#  reappear on any other clone of this repo)
+# ==========================================
+.claude
+.claude/settings.local.json
+CLAUDE.backup.md
+CLAUDE.*
+
+
+cek_mesin_finger.txt
+seed_data.txt
+trial_email
+woorker
+
+# AI working notes and generated trial manifests stay local
+docs/claude/
+var/trial/*.json

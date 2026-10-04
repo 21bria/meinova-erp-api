@@ -63,14 +63,83 @@ def lookup(*, endpoint: str | None = None, lookup_endpoint: str | None = None,
                   label_key=label_key, value_key=value_key,
                   multiple=multiple, **kwargs)
 
-def file(*, accept: str | None = None, max_size_mb: int | float | None = None,
-         multiple: bool | None = None, **kwargs: Any) -> FieldConfig:
-    return custom("file", accept=accept, max_size_mb=max_size_mb,
-                  multiple=multiple, **kwargs)
+def file(
+    *,
+    accept: str | Sequence[str] | None = None,
+    max_size: int | float | None = None,
+    max_size_mb: int | float | None = None,
+    multiple: bool = False,
+    category: str = "attachment",
+    public: bool = False,
+    preview: bool = True,
+    download: bool = True,
+    replace: bool = True,
+    delete: bool = True,
+    upload_endpoint: str = "/api/uploads/",
+    widget: str = "upload",
+    **kwargs: Any,
+) -> FieldConfig:
+    normalized_accept: str | list[str] | None
 
-def image(*, accept: str = "image/*", max_size_mb: int | float | None = None,
-          **kwargs: Any) -> FieldConfig:
-    return custom("image", accept=accept, max_size_mb=max_size_mb, **kwargs)
+    if isinstance(accept, str):
+        normalized_accept = accept
+    elif accept:
+        normalized_accept = list(accept)
+    else:
+        normalized_accept = None
+
+    resolved_max_size = (
+        max_size_mb
+        if max_size_mb is not None
+        else max_size
+    )
+
+    return custom(
+        "file",
+        widget=widget,
+        accept=normalized_accept,
+        max_size_mb=resolved_max_size,
+        multiple=multiple,
+        category=category,
+        public=public,
+        preview=preview,
+        download=download,
+        replace=replace,
+        delete=delete,
+        upload_endpoint=upload_endpoint,
+        **kwargs,
+    )
+
+def image(
+    *,
+    accept: str | Sequence[str] = "image/*",
+    max_size: int | float | None = None,
+    max_size_mb: int | float | None = None,
+    multiple: bool = False,
+    category: str = "image",
+    public: bool = False,
+    preview: bool = True,
+    download: bool = True,
+    replace: bool = True,
+    delete: bool = True,
+    upload_endpoint: str = "/api/uploads/",
+    **kwargs: Any,
+) -> FieldConfig:
+    return file(
+        accept=accept,
+        max_size=max_size,
+        max_size_mb=max_size_mb,
+        multiple=multiple,
+        category=category,
+        public=public,
+        preview=preview,
+        download=download,
+        replace=replace,
+        delete=delete,
+        upload_endpoint=upload_endpoint,
+        widget="image-upload",
+        **kwargs,
+    )
 
 def hidden(**kwargs: Any) -> FieldConfig:
     return custom("hidden", hidden=True, **kwargs)

@@ -1,5 +1,14 @@
 # Analytics Module
 
+!!! danger "📋 Blueprint — belum ada kodenya"
+    Tidak ada app `analytics`. Yang sudah ada dan berjalan adalah **dashboard per modul** (`schema_type: "dashboard"`) — lihat [UI/UX → Dashboard](../../04-ui-ux/Dashboard.md).
+
+    Halaman ini rencana produk, **bukan rujukan implementasi**. Status yang berlaku hari ini: [Module Registry](../Module-Registry.md), dan langkah membangun modul baru di [Build A Module](../../02-Framework/Build-A-Module.md).
+
+---
+
+
+
 > Version: 1.0
 > Status: Active
 > Module: Enterprise Analytics
