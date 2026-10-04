@@ -15,11 +15,11 @@ class CostCenterViewSet(BaseMasterViewSet):
         "code",
         "name",
         "company__name",
-        "site__name",
+        "location__name",
     ]
     filterset_fields = [
         "company",
-        "site",
+        "location",
         "is_active",
     ]
     schema = {
@@ -34,8 +34,12 @@ class CostCenterViewSet(BaseMasterViewSet):
                 "placement": "quick",
                 "order": 10,
             },
-            "site": {
-                "lookup_endpoint": "/api/administration/organization/lookup/sites/",
+            "location": {
+                "lookup_endpoint": "/api/administration/organization/lookup/locations/",
+                "depends_on": "company",
+                "lookup_params": {
+                    "company_id": "$company",
+                },
                 "placement": "quick",
                 "order": 20,
             },

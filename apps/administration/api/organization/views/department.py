@@ -15,12 +15,12 @@ class DepartmentViewSet(BaseMasterViewSet):
         "code",
         "name",
         "company__name",
-        "site__name",
+        "location__name",
         "division__name",
     ]
     filterset_fields = [
         "company",
-        "site",
+        "location",
         "division",
         "is_active",
     ]
@@ -41,8 +41,8 @@ class DepartmentViewSet(BaseMasterViewSet):
                     "order": 10,
                 },
             },
-            "site": {
-                "lookup_endpoint": "/api/administration/organization/lookup/sites/",
+            "location": {
+                "lookup_endpoint": "/api/administration/organization/lookup/locations/",
                 "depends_on": "company",
                 "lookup_params": {
                     "company_id": "$company",
@@ -60,6 +60,7 @@ class DepartmentViewSet(BaseMasterViewSet):
                 "depends_on": "company",
                 "lookup_params": {
                     "company_id": "$company",
+                    "location_id": "$location",
                 },
                 "form": {
                     "order": 30,

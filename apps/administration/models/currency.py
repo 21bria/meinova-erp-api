@@ -1,10 +1,11 @@
 from django.db import models
+from django.db.models import Q
 
 from apps.core.models.base import BaseModel
 
 
 class Currency(BaseModel):
-    code = models.CharField(max_length=3, unique=True)
+    code = models.CharField(max_length=3)
     name = models.CharField(max_length=100)
     symbol = models.CharField(max_length=10)
 
@@ -15,6 +16,14 @@ class Currency(BaseModel):
     class Meta:
         db_table = "master_currency"
         ordering = ["code"]
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=["code"],
+                condition=Q(is_deleted=False),
+                name="uniq_active_administration_currency_code",
+            ),
+        ]
 
     def __str__(self):
         return self.code

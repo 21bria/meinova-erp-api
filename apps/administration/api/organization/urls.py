@@ -3,7 +3,8 @@ from rest_framework.routers import DefaultRouter
 
 from apps.administration.api.organization.views import (
     CompanyViewSet,
-    SiteViewSet,
+    LocationViewSet,
+    FacilityViewSet,
     BranchViewSet,
     DepartmentViewSet,
     DivisionViewSet,
@@ -14,7 +15,8 @@ from apps.administration.api.organization.views import (
 
 router = DefaultRouter()
 router.register("company", CompanyViewSet, basename="organization-company")
-router.register("site", SiteViewSet, basename="organization-site")
+router.register("location", LocationViewSet, basename="organization-location")
+router.register("facility", FacilityViewSet, basename="organization-facility")
 router.register("branch", BranchViewSet, basename="organization-branch")
 router.register("department", DepartmentViewSet, basename="organization-department")
 router.register("division", DivisionViewSet, basename="organization-divison")

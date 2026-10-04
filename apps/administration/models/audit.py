@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.db import models
 
-from .organization import Company, Site
+from .organization import Company, Location
 
 
 class AuditTrail(models.Model):
@@ -28,8 +28,8 @@ class AuditTrail(models.Model):
         related_name="audit_trails",
     )
 
-    site = models.ForeignKey(
-        Site,
+    location = models.ForeignKey(
+        Location,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -102,7 +102,7 @@ class AuditTrail(models.Model):
             models.Index(fields=["action"]),
             models.Index(fields=["user"]),
             models.Index(fields=["company"]),
-            models.Index(fields=["site"]),
+            models.Index(fields=["location"]),
             models.Index(fields=["object_type", "object_id"]),
             models.Index(fields=["created_at"]),
         ]

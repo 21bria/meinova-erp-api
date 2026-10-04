@@ -3,6 +3,21 @@ from rest_framework.routers import DefaultRouter
 
 from apps.administration.api.reference.hr.views.hr import *
 from apps.administration.api.reference.hr.views.hr_attendance import *
+from apps.administration.api.reference.hr.views.attendance_policy import (
+    AttendancePolicyViewSet,
+)
+from apps.administration.api.reference.hr.views.employee_action_policy import (
+    EmployeeActionPolicyViewSet,
+)
+from apps.administration.api.reference.hr.views.employee_data_policy import (
+    EmployeeDataPolicyViewSet,
+)
+from apps.administration.api.reference.hr.views.leave_policy import LeavePolicyViewSet
+from apps.administration.api.reference.hr.views.roster_policy import (
+    RosterPolicyViewSet,
+    RosterShiftRotationViewSet,
+    RosterTravelDayViewSet,
+)
 
 router = DefaultRouter()
 
@@ -49,6 +64,26 @@ router.register("work-schedules",WorkScheduleViewSet,basename="work-schedule",)
 router.register("work-schedule-days",WorkScheduleDayViewSet,basename="work-schedule-day",)
 
 router.register("leave-types", LeaveTypeViewSet, basename="master-leave-type")
+router.register("leave-policies", LeavePolicyViewSet, basename="master-leave-policy")
+router.register(
+    "attendance-policies",
+    AttendancePolicyViewSet,
+    basename="master-attendance-policy",
+)
+router.register(
+    "employee-action-policies",
+    EmployeeActionPolicyViewSet,
+    basename="master-employee-action-policy",
+)
+router.register(
+    "employee-data-policies",
+    EmployeeDataPolicyViewSet,
+    basename="master-employee-data-policy",
+)
+router.register("roster-policies", RosterPolicyViewSet, basename="master-roster-policy")
+router.register("roster-shift-rotations", RosterShiftRotationViewSet, basename="master-roster-shift-rotation")
+router.register("roster-travel-days", RosterTravelDayViewSet, basename="master-roster-travel-day")
+router.register("rotation-purposes", RotationPurposeViewSet, basename="master-rotation-purpose")
 router.register("leave-reasons", LeaveReasonViewSet, basename="master-leave-reason")
 router.register("attendance-statuses", AttendanceStatusViewSet, basename="master-attendance-status")
 router.register("overtime-types", OvertimeTypeViewSet, basename="master-overtime-type")
@@ -113,6 +148,20 @@ router.register("exit-clearance-statuses", ExitClearanceStatusViewSet, basename=
 
 router.register("training-category", TrainingCategoryViewSet, basename="master-training-category")
 router.register("training-provider", TrainingProviderViewSet, basename="master-training-provider")
+
+# -----------------------------------------------------------------------------
+# Site Rotation References
+# -----------------------------------------------------------------------------
+
+router.register("transport-modes", TransportModeViewSet, basename="master-transport-mode")
+router.register("accommodation-types", AccommodationTypeViewSet, basename="master-accommodation-type")
+
+# -----------------------------------------------------------------------------
+# Visitor Management References
+# -----------------------------------------------------------------------------
+
+router.register("visit-purposes", VisitPurposeViewSet, basename="master-visit-purpose")
+router.register("visit-types", VisitTypeViewSet, basename="master-visit-type")
 
 urlpatterns = [
     path("lookup/",include( "apps.administration.api.reference.hr.lookup.urls" )),

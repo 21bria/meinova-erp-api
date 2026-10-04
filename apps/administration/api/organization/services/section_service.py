@@ -7,7 +7,7 @@ class SectionService:
         return (
             Section.objects.select_related(
                 "company",
-                "site",
+                "location",
                 "division",
                 "department",
             )

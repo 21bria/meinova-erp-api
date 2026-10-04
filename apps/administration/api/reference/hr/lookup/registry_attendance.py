@@ -37,3 +37,11 @@ class ShiftLookup(BaseHRAttendanceLookup):
 class WorkScheduleLookup(BaseHRAttendanceLookup):
     name = "work-schedules"
     model = WorkSchedule
+
+    # Tanpa didaftarkan di sini, `?schedule_type=ROSTER` diterima lalu
+    # diabaikan diam-diam — form Roster Crew akan menampilkan seluruh
+    # jadwal, termasuk yang mingguan.
+    filter_fields = [
+        "schedule_type",
+        "is_flexible",
+    ]

@@ -21,14 +21,14 @@ class SectionViewSet(BaseMasterViewSet):
         "code",
         "name",
         "company__name",
-        "site__name",
+        "location__name",
         "division__name",
         "department__name",
     ]
 
     filterset_fields = [
         "company",
-        "site",
+        "location",
         "division",
         "department",
         "is_active",
@@ -51,10 +51,10 @@ class SectionViewSet(BaseMasterViewSet):
                 "order": 10,
             },
 
-            "site": {
+            "location": {
                 "lookup_endpoint": (
                     "/api/administration/organization/"
-                    "lookup/sites/"
+                    "lookup/locations/"
                 ),
                 "depends_on": "company",
                 "lookup_params": {
@@ -70,9 +70,10 @@ class SectionViewSet(BaseMasterViewSet):
                     "/api/administration/organization/"
                     "lookup/divisions/"
                 ),
-                "depends_on": "site",
+                "depends_on": "company",
                 "lookup_params": {
-                    "site_id": "$site",
+                    "company_id": "$company",
+                    "location_id": "$location",
                 },
                 "required": True,
                 "placement": "advanced",
@@ -84,8 +85,10 @@ class SectionViewSet(BaseMasterViewSet):
                     "/api/administration/organization/"
                     "lookup/departments/"
                 ),
-                "depends_on": "division",
+                "depends_on": "company",
                 "lookup_params": {
+                    "company_id": "$company",
+                    "location_id": "$location",
                     "division_id": "$division",
                 },
                 "required": True,

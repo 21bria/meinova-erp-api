@@ -3,6 +3,11 @@ from apps.framework.lookup import (
     register_lookup,
 )
 
+from apps.administration.models.references.hr import (
+    HRFeature,
+    applicability_field,
+)
+
 from apps.administration.models import (
     # Personal
     Gender,
@@ -29,8 +34,12 @@ from apps.administration.models import (
     JobLevel,
     JobGrade,
 
+    # Roster
+    RosterPolicy,
+
     # Leave
     LeaveType,
+    RotationPurpose,
     LeaveReason,
     AttendanceStatus,
     OvertimeType,
@@ -74,6 +83,14 @@ from apps.administration.models import (
     # Training
     TrainingCategory,
     TrainingProvider,
+
+    # Site Rotation
+    TransportMode,
+    AccommodationType,
+
+    # Visitor Management
+    VisitPurpose,
+    VisitType,
 )
 
 class BaseHRReferenceLookup(BaseLookup):
@@ -108,6 +125,30 @@ class ReligionLookup(BaseHRReferenceLookup):
 class NationalityLookup(BaseHRReferenceLookup):
     name = "nationalities"
     model = Nationality
+
+    @classmethod
+    def serialize(cls, instance):
+        """
+        Ikut mengirim `code`.
+
+        Dibaca `autofill` pada field Nationality di form Employee:
+        nilainya disalin ke `nationality_code`, dan blok alamat wilayah
+        (Province sampai Kelurahan/Desa) menyalakan dirinya dari situ —
+        pembagian administratif Indonesia tidak berlaku untuk warga
+        negara lain.
+
+        Yang dikirim **kode**, bukan nama. Kodenya ISO-2 (`ID`), sama
+        dengan `Country.code`, dan berconstraint unik; nama negara
+        ditulis berbeda-beda ("Indonesian", "Indonesia", "WNI") dan
+        pencocokan nama akan gagal tepat saat ada yang merapikan
+        masternya. Pola yang sama dengan `requires_contract` pada
+        `EmploymentTypeLookup`.
+        """
+        data = super().serialize(instance)
+
+        data["code"] = instance.code
+
+        return data
 
 
 @register_lookup
@@ -165,6 +206,24 @@ class EmploymentTypeLookup(BaseHRReferenceLookup):
     name = "employment-types"
     model = EmploymentType
 
+    @classmethod
+    def serialize(cls, instance):
+        """
+        Ikut mengirim `requires_contract`.
+
+        Dibaca `autofill` pada field Employment Type di form Employee:
+        nilainya disalin ke `employment_type_requires_contract`, dan
+        kolom Contract Type/Start/End menyalakan dirinya dari situ.
+        Tanpa ini form harus menebak dari kode master — dan tenant yang
+        menamai jenis kepegawaiannya sendiri kehilangan kolom kontrak
+        tanpa satu pun pesan.
+        """
+        data = super().serialize(instance)
+
+        data["requires_contract"] = instance.requires_contract
+
+        return data
+
 
 @register_lookup
 class EmploymentStatusLookup(BaseHRReferenceLookup):
@@ -188,6 +247,31 @@ class ProbationTypeLookup(BaseHRReferenceLookup):
 class EmployeeGroup(BaseHRReferenceLookup):
     name = "employee-groups"
     model = EmployeeGroup
+
+    @classmethod
+    def serialize(cls, instance):
+        """
+        Ikut mengirim keenam penanda Feature Applicability.
+
+        Dibaca `autofill` pada field Employee Group di form Employee:
+        nilainya disalin ke `employee_group_<x>_applicable`, dan kolom
+        Shift, Roster Crew, serta Roster Policy menyalakan dirinya dari
+        situ. Pola yang sama persis dengan `requires_contract` pada
+        `EmploymentTypeLookup` — dan alasannya juga sama: menebak dari
+        kode master (`BOARD`, `FIELD`, …) membuat tenant yang menamai
+        group-nya sendiri kehilangan aturannya tanpa satu pun pesan.
+
+        Kalau kunci ini dicabut dari sini, kolomnya berhenti bereaksi
+        saat group-nya diganti dan tidak ada error apa pun.
+        """
+        data = super().serialize(instance)
+
+        for feature in HRFeature:
+            key = applicability_field(feature)
+
+            data[key] = getattr(instance, key)
+
+        return data
 
 
 @register_lookup
@@ -217,6 +301,30 @@ class JobGradeLookup(BaseHRReferenceLookup):
 # -----------------------------------------------------------------------------
 # Leave References
 # -----------------------------------------------------------------------------
+
+@register_lookup
+class RotationPurposeLookup(BaseHRReferenceLookup):
+    name = "rotation-purposes"
+    model = RotationPurpose
+
+    @classmethod
+    def apply_filters(cls, queryset, params):
+        """
+        `?document=travel_request` membuang alasan milik Business Trip
+        (TR-CLEANUP-1). Tanpa parameter itu daftarnya utuh — jadwal
+        roster memakai lookup yang sama. Penjagaannya tetap di
+        `TravelRequestPurposeService`; ini cuma supaya yang pasti
+        ditolak tidak ditawarkan.
+        """
+        queryset = super().apply_filters(queryset, params)
+
+        if params.get("document") == "travel_request":
+            queryset = queryset.exclude(
+                code__in=RotationPurpose.BUSINESS_TRIP_CODES,
+            )
+
+        return queryset
+
 
 @register_lookup
 class LeaveTypeLookup(BaseHRReferenceLookup):
@@ -420,11 +528,112 @@ class ExitClearanceStatusLookup(BaseHRReferenceLookup):
 
 @register_lookup
 class TrainingCategoryLookup(BaseHRReferenceLookup):
-    name = "training-category"
+    name = "training-categories"
     model = TrainingCategory
 
 
 @register_lookup
 class TrainingProviderLookup(BaseHRReferenceLookup):
-    name = "training-provider"
+    name = "training-providers"
     model = TrainingProvider
+
+
+# -----------------------------------------------------------------------------
+# Site Rotation References
+# -----------------------------------------------------------------------------
+
+
+@register_lookup
+class TransportModeLookup(BaseHRReferenceLookup):
+    name = "transport-modes"
+    model = TransportMode
+
+
+@register_lookup
+class AccommodationTypeLookup(BaseHRReferenceLookup):
+    name = "accommodation-types"
+    model = AccommodationType
+
+
+# -----------------------------------------------------------------------------
+# Visitor Management References
+# -----------------------------------------------------------------------------
+
+
+@register_lookup
+class VisitPurposeLookup(BaseHRReferenceLookup):
+    name = "visit-purposes"
+    model = VisitPurpose
+
+
+@register_lookup
+class VisitTypeLookup(BaseHRReferenceLookup):
+    name = "visit-types"
+    model = VisitType
+
+
+@register_lookup
+class RosterPolicyLookup(BaseLookup):
+    """
+    Pola roster yang bisa ditugaskan ke pegawai.
+
+    **Hanya yang punya pola siklus.** Policy tanpa `cycle_work_days` /
+    `cycle_off_days` tetap sah sebagai aturan site — hari perjalanan,
+    tenggat pengajuan — tapi tidak bisa menghasilkan jadwal, dan
+    menawarkannya di dropdown cuma menghasilkan pilihan yang gagal saat
+    disimpan. `EmploymentAssignment.clean()` yang menolaknya; dropdown
+    ini yang membuat penolakan itu tidak pernah perlu terjadi.
+    """
+
+    name = "roster-policies"
+    model = RosterPolicy
+
+    search_fields = ["code", "name"]
+    ordering = ["company", "location", "code"]
+
+    # Disaring dari form pegawai lewat penempatannya, supaya orang
+    # Gebe tidak ditawari pola milik site lain. Parameter yang tidak
+    # terdaftar di sini diabaikan diam-diam — itu penyebab klasik
+    # dropdown yang "tidak mau tersaring".
+    filter_fields = ["company_id", "location_id", "is_default"]
+
+    @classmethod
+    def get_queryset(cls):
+        return (
+            super().get_queryset()
+            .select_related("company", "location")
+            .filter(
+                cycle_work_days__isnull=False,
+                cycle_off_days__isnull=False,
+            )
+        )
+
+    @classmethod
+    def serialize(cls, instance):
+        """
+        Ikut mengirim pola dan basisnya.
+
+        Dibaca `autofill` pada field Roster Policy di form Employee:
+        memilih policy langsung memperlihatkan 42/14 dan panjang
+        siklusnya, jadi yang mengisi Current Cycle Start tahu tanggal
+        apa yang sedang dimintanya. Tanpa ini, angka yang menentukan
+        seluruh jadwal seseorang cuma terbaca setelah dokumennya jadi.
+        """
+        data = super().serialize(instance)
+
+        data.update(
+            {
+                "cycle_work_days": instance.cycle_work_days,
+                "cycle_off_days": instance.cycle_off_days,
+                "cycle_length": instance.cycle_length,
+                "roster_start_basis": instance.roster_start_basis,
+                "roster_start_basis_label": (
+                    instance.get_roster_start_basis_display()
+                ),
+                "credit_enabled": instance.credit_enabled,
+                "company_id": instance.company_id,
+                "location_id": instance.location_id,
+            },
+        )
+
+        return data

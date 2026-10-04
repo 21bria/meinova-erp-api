@@ -7,6 +7,7 @@
 
 # python manage.py tenant_command seed_administration --only=numbering --schema=demo
 # python manage.py tenant_command seed_administration --only=currency --schema=demo
+# python manage.py tenant_command seed_administration --only=calendar --schema=demo
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
@@ -18,25 +19,37 @@ from apps.administration.seeds.bank import seed_bank
 from apps.administration.seeds.bank_branch import seed_bank_branch
 
 from apps.administration.seeds.reference.organization import seed_organization_reference
-from apps.administration.seeds.organization import seed_organization
 from apps.administration.seeds.numbering import seed_numbering
 from apps.administration.seeds.currency import seed_currency
 
+# WorkCalendar + Holiday. Sempat tidak terdaftar di SEEDERS sehingga
+# tidak pernah ikut jalan — akibatnya perhitungan hari cuti jatuh ke
+# fallback Senin-Jumat dan hari libur nasional ikut terpotong saldo.
+from apps.administration.seeds.calendar import seed as seed_calendar
 
+
+# Isinya **hanya master yang berlaku untuk tenant mana pun**.
+#
+# `organization` sengaja tidak lagi di sini. Struktur perusahaan bukan
+# data referensi: yang dulu terdaftar di jalur ini adalah 12 badan usaha
+# milik satu klien, jadi setiap tenant yang pernah dibuat — termasuk
+# tenant peragaan — ikut mendapatkannya. Sekarang strukturnya dipilih
+# sadar lewat perintah tersendiri:
+#
+#   tenant_command seed_demo_organization   → 3 company peragaan
+#   tenant_command seed_client_org --client=kw → struktur klien
 SEEDERS = {
     "hr-reference": seed_hr_reference,
     "geography": seed_geography,
 
     "organization-reference": seed_organization_reference,
-    "organization": seed_organization,
-    
+
     "bank": seed_bank,
-    "bank-branch": seed_bank_branch,
     "bank-branch": seed_bank_branch,
 
     "numbering": seed_numbering,
     "currency": seed_currency,
-
+    "calendar": seed_calendar,
 }
 
 class Command(BaseCommand):

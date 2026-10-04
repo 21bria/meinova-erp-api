@@ -1,4 +1,9 @@
-from apps.administration.models import CompanyType, BranchType, SiteType
+from apps.administration.models import (
+    BranchType,
+    CompanyType,
+    FacilityType,
+    LocationType,
+)
 
 
 class CompanyTypeService:
@@ -13,8 +18,14 @@ class BranchTypeService:
         return BranchType.objects.filter(is_deleted=False).order_by("sort_order", "name")
 
 
-class SiteTypeService:
+class LocationTypeService:
     @staticmethod
     def list():
-        return SiteType.objects.filter(is_deleted=False).order_by("sort_order", "name")
+        return LocationType.objects.filter(is_deleted=False).order_by("sort_order", "name")
 
+
+
+class FacilityTypeService:
+    @staticmethod
+    def list():
+        return FacilityType.objects.filter(is_deleted=False).order_by("sort_order", "name")

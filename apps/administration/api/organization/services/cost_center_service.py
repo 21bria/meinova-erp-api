@@ -7,7 +7,7 @@ class CostCenterService:
         return (
             CostCenter.objects.select_related(
                 "company",
-                "site",
+                "location",
             )
             .order_by("name")
         )

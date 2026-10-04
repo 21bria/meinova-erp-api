@@ -2,17 +2,17 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from apps.administration.api.calendar.views.calendar import (
-    FiscalYearViewSet,
-    PostingPeriodViewSet,
     HolidayViewSet,
     WorkCalendarViewSet,
+    RosterCrewViewSet,
 )
 
 router = DefaultRouter()
-router.register("fiscal-years", FiscalYearViewSet, basename="calendar-fiscal-year")
-router.register("posting-periods", PostingPeriodViewSet, basename="calendar-posting-period")
+# `fiscal-years/` dan `posting-periods/` pindah ke Finance:
+# `/api/finance/fiscal-years/` dan `/api/finance/accounting-periods/`.
 router.register("holidays", HolidayViewSet, basename="calendar-holiday")
 router.register("work-calendars", WorkCalendarViewSet, basename="calendar-work-calendar")
+router.register("roster-crews", RosterCrewViewSet, basename="calendar-roster-crew")
 
 urlpatterns = [
      path(

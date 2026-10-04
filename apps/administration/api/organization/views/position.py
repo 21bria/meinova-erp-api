@@ -17,7 +17,7 @@ class PositionViewSet(BaseMasterViewSet):
         "name",
         "company__name",
         "branch__name",
-        "site__name",
+        "location__name",
         "division__name",
         "department__name",
         "section__name",
@@ -28,7 +28,7 @@ class PositionViewSet(BaseMasterViewSet):
     filterset_fields = [
         "company",
         "branch",
-        "site",
+        "location",
         "division",
         "department",
         "section",
@@ -67,13 +67,14 @@ class PositionViewSet(BaseMasterViewSet):
                 "order": 20,
             },
 
-            "site": {
+            "location": {
                 "lookup_endpoint": (
                     "/api/administration/organization/"
-                    "lookup/sites/"
+                    "lookup/locations/"
                 ),
-                "depends_on": "branch",
+                "depends_on": "company",
                 "lookup_params": {
+                    "company_id": "$company",
                     "branch_id": "$branch",
                 },
                 "placement": "advanced",
@@ -85,9 +86,11 @@ class PositionViewSet(BaseMasterViewSet):
                     "/api/administration/organization/"
                     "lookup/divisions/"
                 ),
-                "depends_on": "site",
+                "depends_on": "company",
                 "lookup_params": {
-                    "site_id": "$site",
+                    "company_id": "$company",
+                    "branch_id": "$branch",
+                    "location_id": "$location",
                 },
                 "placement": "advanced",
                 "order": 40,
@@ -98,8 +101,10 @@ class PositionViewSet(BaseMasterViewSet):
                     "/api/administration/organization/"
                     "lookup/departments/"
                 ),
-                "depends_on": "division",
+                "depends_on": "company",
                 "lookup_params": {
+                    "company_id": "$company",
+                    "location_id": "$location",
                     "division_id": "$division",
                 },
                 "placement": "advanced",
@@ -111,8 +116,11 @@ class PositionViewSet(BaseMasterViewSet):
                     "/api/administration/organization/"
                     "lookup/sections/"
                 ),
-                "depends_on": "department",
+                "depends_on": "company",
                 "lookup_params": {
+                    "company_id": "$company",
+                    "location_id": "$location",
+                    "division_id": "$division",
                     "department_id": "$department",
                 },
                 "placement": "advanced",

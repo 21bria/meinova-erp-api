@@ -13,8 +13,8 @@ class CostCenterSerializer(serializers.ModelSerializer):
         read_only=True,
         default=None,
     )
-    site_name = serializers.CharField(
-        source="site.name",
+    location_name = serializers.CharField(
+        source="location.name",
         read_only=True,
         default=None,
     )

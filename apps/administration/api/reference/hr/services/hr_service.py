@@ -32,6 +32,7 @@ from apps.administration.models.references.hr import (
     #  Leave References
     # -------------------------------------------------------------------------
     LeaveType,
+    RotationPurpose,
     LeaveReason,
     AttendanceStatus,
     OvertimeType,
@@ -89,6 +90,13 @@ from apps.administration.models.references.hr import (
     # --------------------------------------------------------------------------
     TrainingCategory,
     TrainingProvider,
+
+    # -------------------------------------------------------------------------
+    # Site Rotation References
+    # -------------------------------------------------------------------------
+    TransportMode,
+    AccommodationType,
+
 )
 
 
@@ -193,6 +201,10 @@ class JobGradeService(BaseMasterService):
 
 class LeaveTypeService(BaseMasterService):
     model = LeaveType
+
+
+class RotationPurposeService(BaseMasterService):
+    model = RotationPurpose
 
 
 class LeaveReasonService(BaseMasterService):
@@ -343,3 +355,33 @@ class TrainingCategoryService(BaseMasterService):
 
 class TrainingProviderService(BaseMasterService):
     model = TrainingProvider
+
+
+# --------------------------------------------------------------------------
+# Site Rotation
+# --------------------------------------------------------------------------
+
+class TransportModeService(BaseMasterService):
+    model = TransportMode
+
+
+class AccommodationTypeService(BaseMasterService):
+    model = AccommodationType
+
+# Visitor Management — master baru, berkas modelnya sendiri.
+from apps.administration.models.references.visitor import (
+    VisitPurpose,
+    VisitType,
+)
+
+
+# -----------------------------------------------------------------------------
+# Visitor Management
+# -----------------------------------------------------------------------------
+
+class VisitPurposeService(BaseMasterService):
+    model = VisitPurpose
+
+
+class VisitTypeService(BaseMasterService):
+    model = VisitType

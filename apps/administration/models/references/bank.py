@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 
 from apps.core.models import BaseModel
 
@@ -6,7 +7,6 @@ from apps.core.models import BaseModel
 class Bank(BaseModel):
     code = models.CharField(
         max_length=20,
-        unique=True,
     )
 
     name = models.CharField(
@@ -32,6 +32,14 @@ class Bank(BaseModel):
     class Meta:
         db_table = "master_bank"
         ordering = ["name"]
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=["code"],
+                condition=Q(is_deleted=False),
+                name="uniq_active_administration_bank_code",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.code} - {self.name}"

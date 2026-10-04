@@ -19,8 +19,8 @@ def branch_type_schema(module: str):
     return _base_schema("Branch Types")
 
 
-def site_type_schema(module: str):
-    return _base_schema("Site Types")
+def location_type_schema(module: str):
+    return _base_schema("Location Types")
 
 
 def work_location_type_schema(module: str):

@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 
 from apps.core.models.base import BaseModel
 
@@ -12,7 +13,7 @@ class DashboardWidget(BaseModel):
         LIST = "LIST", "List"
         CUSTOM = "CUSTOM", "Custom"
 
-    code = models.CharField(max_length=100, unique=True)
+    code = models.CharField(max_length=100)
     title = models.CharField(max_length=150)
     description = models.TextField(blank=True)
 
@@ -35,12 +36,20 @@ class DashboardWidget(BaseModel):
         db_table = "master_dashboard_widget"
         ordering = ["module", "title"]
 
+        constraints = [
+            models.UniqueConstraint(
+                fields=["code"],
+                condition=Q(is_deleted=False),
+                name="uniq_active_administration_dashboardwidget_code",
+            ),
+        ]
+
     def __str__(self):
         return self.title
 
 
 class DashboardTemplate(BaseModel):
-    code = models.CharField(max_length=100, unique=True)
+    code = models.CharField(max_length=100)
     name = models.CharField(max_length=150)
     description = models.TextField(blank=True)
 
@@ -51,6 +60,14 @@ class DashboardTemplate(BaseModel):
     class Meta:
         db_table = "master_dashboard_template"
         ordering = ["name"]
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=["code"],
+                condition=Q(is_deleted=False),
+                name="uniq_active_administration_dashboardtemplate_code",
+            ),
+        ]
 
     def __str__(self):
         return self.name

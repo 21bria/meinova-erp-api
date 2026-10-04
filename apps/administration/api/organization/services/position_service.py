@@ -8,7 +8,7 @@ class PositionService:
             Position.objects.select_related(
                 "company",
                 "branch",
-                "site",
+                "location",
                 "division",
                 "department",
                 "section",

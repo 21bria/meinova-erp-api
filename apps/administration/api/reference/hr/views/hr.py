@@ -151,11 +151,152 @@ class ProbationTypeViewSet(BaseReferenceViewSet):
     framework_module = "references/hr/probation-types"
     schema = reference_schema("probation-types")
 
+def employee_group_schema():
+    """
+    Master klasifikasi pegawai, plus **Feature Applicability**: proses
+    HR mana yang berlaku untuk pegawai di group ini.
+
+    Enam saklar, satu per proses, urut 40–90 supaya berdiri sebagai satu
+    blok di bawah Description dan tidak berselang-seling dengan kolom
+    referensi biasa. Bentuknya sama dengan `deducts_leave` pada Rotation
+    Purpose — saklar di master, bukan cabang `if` di modul pemakainya.
+
+    Semuanya menyala secara bawaan; yang mematikan adalah admin. Group
+    yang sudah ada karena itu tidak kehilangan satu proses pun setelah
+    migrasi.
+    """
+    schema = reference_schema("employment-groups")
+
+    applicability = {
+        "attendance_applicable": (
+            "Attendance",
+            "Pegawai group ini jadi subjek Attendance — jadwal, "
+            "penutupan hari, dan penandaan mangkir. Matikan untuk "
+            "direksi: mereka tetap Employee, cuma tidak diabsen.",
+            40,
+        ),
+        "leave_applicable": (
+            "Leave",
+            "Pegawai group ini memakai proses Cuti — saldo, pengajuan, "
+            "dan persetujuan.",
+            50,
+        ),
+        "roster_applicable": (
+            "Roster",
+            "Ikut Roster — muncul sebagai kandidat Roster Setup dan "
+            "Roster Assignment.",
+            60,
+        ),
+        "shift_applicable": (
+            "Shift",
+            "Memakai Shift pada pola kerjanya. Mati = kolom Shift tidak "
+            "berlaku untuk pegawai group ini.",
+            70,
+        ),
+        "overtime_applicable": (
+            "Overtime",
+            "Bisa mengajukan atau dicatatkan Lembur.",
+            80,
+        ),
+        # Dua penanda ini = penentu dokumen perjalanan (TR/BT POLICY-1).
+        # Labelnya menyebut dokumennya, bukan cuma nama prosesnya: admin
+        # yang membuka form ini sedang memutuskan "group ini memakai TR,
+        # BT, atau keduanya", dan "Field Break" saja tidak menjawab itu.
+        "field_break_applicable": (
+            "Field Break / Travel Request",
+            "Employees in this group may use Travel Request.",
+            90,
+        ),
+        "business_trip_applicable": (
+            "Business Trip",
+            "Employees in this group may use Business Trip.",
+            100,
+        ),
+    }
+
+    schema["fields"] = {
+        **schema["fields"],
+        **{
+            key: {
+                "label": label,
+                "form": True,
+                # Enam kolom boolean di tabel referensi membuat barisnya
+                # tidak terbaca lagi. Tempatnya form dan filter — yang
+                # ingin tahu "siapa saja yang tidak diabsen" memakai
+                # penyaring, bukan memindai enam kolom centang.
+                "table": False,
+                "filter": True,
+                # Advanced, bukan quick. Enam dropdown boolean di toolbar
+                # menutupi kotak pencarian dan tombol yang memang dipakai
+                # tiap hari; generator memilih `quick` untuk boolean
+                # kalau schema tidak menyebutkan apa-apa.
+                "placement": "advanced",
+                "help_text": help_text,
+                "order": order,
+            }
+            for key, (label, help_text, order) in applicability.items()
+        },
+        # Turunan dua saklar di atas (TR/BT POLICY-1). Read-only, tampil
+        # di form, bukan kolom/filter — nilainya tidak disimpan, jadi
+        # tidak bisa disaring di SQL.
+        #
+        # `select` read-only, bukan teks: nilainya kode stabil
+        # (`travel_request` / `business_trip` / `both` / `none`) dan
+        # frontend menerjemahkannya lewat `codes.travel_document.*`.
+        # Opsinya hanya label tampilan — tidak ada yang bisa memilihnya.
+        # Hanya edit/detail: di layar create belum ada record yang bisa
+        # diturunkan, dan frontend sengaja tidak menghitungnya sendiri.
+        "travel_document": {
+            "type": "select",
+            "widget": "select",
+            "label": "Travel Document",
+            "read_only": True,
+            "display": True,
+            "table": False,
+            "filter": False,
+            "sortable": False,
+            "options": [
+                {"value": "travel_request", "label": "Travel Request"},
+                {"value": "business_trip", "label": "Business Trip"},
+                {"value": "both", "label": "Travel Request + Business Trip"},
+                {"value": "none", "label": "No travel document enabled"},
+            ],
+            "modes": ["edit", "detail"],
+            "help_text": (
+                "Derived from Field Break / Travel Request and Business "
+                "Trip after saving."
+            ),
+            "order": 110,
+        },
+        # Peringatan konfigurasi (`both` / `none`), bukan validasi:
+        # tampil sebagai kotak peringatan, tidak pernah menahan simpan.
+        "travel_document_warnings": {
+            "widget": "warnings",
+            "label": "Travel Document Warnings",
+            "read_only": True,
+            "display": True,
+            "table": False,
+            "filter": False,
+            "sortable": False,
+            "layout": "full",
+            "modes": ["edit", "detail"],
+            "order": 120,
+        },
+    }
+
+    return schema
+
+
 class EmployeeGroupViewSet(BaseReferenceViewSet):
+    # Slug-nya `employment-groups`, sama dengan rutenya di `urls.py` dan
+    # sama dengan modul FE yang sudah ada. Sempat tertulis
+    # `employee-groups` di dua tempat ini saja — `endpoint` pada schema
+    # jadi menunjuk URL yang tidak pernah ada, dan modul hasil generate
+    # berikutnya akan menembak 404 tanpa satu pun pesan.
     serializer_class = EmployeeGroupSerializer
     service_class = EmployeeGroupService
-    framework_module = "references/hr/employee-groups"
-    schema = reference_schema("employee-groups")
+    framework_module = "references/hr/employment-groups"
+    schema = employee_group_schema()
 
 
 class JobCategoryViewSet(BaseReferenceViewSet):
@@ -196,6 +337,66 @@ class LeaveTypeViewSet(BaseReferenceViewSet):
     service_class = LeaveTypeService
     framework_module = "references/hr/leave-types"
     schema = reference_schema("leave-types")
+
+
+def rotation_purpose_schema():
+    """
+    Master alasan blok off roster, plus dua kolom yang membuatnya berbeda
+    dari referensi biasa: penanda pemotong saldo dan saldo mana yang
+    dipotong.
+    """
+    schema = reference_schema("rotation-purposes")
+
+    schema["fields"] = {
+        **schema["fields"],
+
+        "deducts_leave": {
+            "label": "Deducts Leave",
+            "form": True,
+            "table": True,
+            "filter": True,
+            "help_text": (
+                "Blok off dengan alasan ini memotong saldo cuti. "
+                "Field Break tidak; Cuti Tahunan ya."
+            ),
+            "order": 40,
+        },
+
+        "leave_type": {
+            "label": "Leave Type",
+            "form": True,
+            "table": True,
+            "filter": True,
+            "widget": "lookup",
+            "type": "lookup",
+            "lookup_endpoint": (
+                "/api/administration/references/hr/lookup/leave-types/"
+            ),
+            "display_key": "leave_type_name",
+            "help_text": (
+                "Saldo yang dipotong. Wajib diisi kalau Deducts Leave "
+                "menyala — memotong saldo tanpa menyebut saldo yang mana "
+                "tidak bisa dieksekusi."
+            ),
+            "order": 50,
+        },
+
+        "leave_type_name": {
+            "table": False,
+            "filter": False,
+            "search": False,
+            "sortable": False,
+        },
+    }
+
+    return schema
+
+
+class RotationPurposeViewSet(BaseReferenceViewSet):
+    serializer_class = RotationPurposeSerializer
+    service_class = RotationPurposeService
+    framework_module = "references/hr/rotation-purposes"
+    schema = rotation_purpose_schema()
 
 
 class LeaveReasonViewSet(BaseReferenceViewSet):
@@ -432,3 +633,68 @@ class TrainingProviderViewSet(BaseReferenceViewSet):
     service_class = TrainingProviderService
     framework_module = "references/hr/training-provider"
     schema = reference_schema("training-provider")
+
+
+class TransportModeViewSet(BaseReferenceViewSet):
+    serializer_class = TransportModeSerializer
+    service_class = TransportModeService
+    framework_module = "references/hr/transport-modes"
+    schema = reference_schema("transport-modes")
+
+
+class AccommodationTypeViewSet(BaseReferenceViewSet):
+    serializer_class = AccommodationTypeSerializer
+    service_class = AccommodationTypeService
+    framework_module = "references/hr/accommodation-types"
+    schema = reference_schema("accommodation-types")
+
+
+# -----------------------------------------------------------------------------
+# Visitor Management References
+# -----------------------------------------------------------------------------
+
+
+def visit_purpose_schema():
+    """
+    Alasan kunjungan, plus penanda apakah alasan ini wajib lewat alur
+    persetujuan.
+
+    Penandanya **belum dibaca siapa pun** — seluruh Visitor Request hari
+    ini tetap melewati alurnya. Ditampilkan apa adanya beserta help
+    text yang menyebutkannya, bukan disembunyikan: kolom yang ada di
+    database tapi tidak ada di layar adalah cara tercepat membuat orang
+    berikutnya menyangka fiturnya sudah jalan.
+    """
+    schema = reference_schema("visit-purposes")
+
+    schema["fields"] = {
+        **schema["fields"],
+
+        "requires_approval": {
+            "label": "Requires Approval",
+            "form": True,
+            "table": True,
+            "filter": True,
+            "help_text": (
+                "Belum berpengaruh — seluruh Visitor Request tetap "
+                "melewati alur persetujuan."
+            ),
+            "order": 40,
+        },
+    }
+
+    return schema
+
+
+class VisitPurposeViewSet(BaseReferenceViewSet):
+    serializer_class = VisitPurposeSerializer
+    service_class = VisitPurposeService
+    framework_module = "references/hr/visit-purposes"
+    schema = visit_purpose_schema()
+
+
+class VisitTypeViewSet(BaseReferenceViewSet):
+    serializer_class = VisitTypeSerializer
+    service_class = VisitTypeService
+    framework_module = "references/hr/visit-types"
+    schema = reference_schema("visit-types")

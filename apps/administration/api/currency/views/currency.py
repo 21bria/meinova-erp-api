@@ -25,6 +25,14 @@ class CurrencyViewSet(BaseMasterViewSet):
 
 
 class ExchangeRateViewSet(BaseMasterViewSet):
+    search_fields = [
+        "from_currency__code",
+        "from_currency__name",
+        "to_currency__code",
+        "to_currency__name",
+        "rate_type",
+    ]
+
     permission_classes = [IsAuthenticated]
     serializer_class = ExchangeRateSerializer
     service_class = ExchangeRateService

@@ -1,6 +1,11 @@
 from rest_framework import serializers
 
-from apps.administration.models.references.organization import CompanyType, BranchType, SiteType
+from apps.administration.models.references.organization import (
+    BranchType,
+    CompanyType,
+    FacilityType,
+    LocationType,
+)
 
 
 class CompanyTypeSerializer(serializers.ModelSerializer):
@@ -15,8 +20,14 @@ class BranchTypeSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class SiteTypeSerializer(serializers.ModelSerializer):
+class LocationTypeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = SiteType
+        model = LocationType
         fields = "__all__"
 
+
+
+class FacilityTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FacilityType
+        fields = "__all__"

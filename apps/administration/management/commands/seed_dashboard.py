@@ -24,16 +24,15 @@ class Command(BaseCommand):
 
         widgets = DashboardSeeder.seed_widgets()
         apps = DashboardSeeder.seed_favorite_apps()
-        menus = DashboardSeeder.seed_favorite_menus()
-        layout = DashboardSeeder.seed_default_layout()
 
+        # Pintasan (Favorite Menus) tidak diseed lagi: katalognya tabel
+        # `Menu` dan susunan bawaannya diturunkan saat dibaca. Jalankan
+        # `tenant_command seed_menus` supaya ada yang bisa dipilih.
         self.stdout.write(
             self.style.SUCCESS(
                 f"Dashboard seeded successfully.\n"
                 f"Tenant  : {tenant.schema_name}\n"
                 f"Widgets : {widgets}\n"
-                f"Apps    : {apps}\n"
-                f"Menus   : {menus}\n"
-                f"Layout  : {layout}"
+                f"Apps    : {apps}"
             )
         )

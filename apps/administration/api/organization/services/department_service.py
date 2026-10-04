@@ -7,7 +7,7 @@ class DepartmentService:
         return (
             Department.objects.select_related(
                 "company",
-                "site",
+                "location",
                 "division",
             )
             .order_by("name")

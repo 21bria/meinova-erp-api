@@ -14,8 +14,8 @@ class DivisionSerializer(serializers.ModelSerializer):
         read_only=True,
         default=None,
     )
-    site_name = serializers.CharField(
-        source="site.name",
+    location_name = serializers.CharField(
+        source="location.name",
         read_only=True,
         default=None,
     )
@@ -28,8 +28,8 @@ class DivisionSerializer(serializers.ModelSerializer):
             "company_name",
             "branch",
             "branch_name",
-            "site",
-            "site_name",
+            "location",
+            "location_name",
             "code",
             "name",
             "is_active",

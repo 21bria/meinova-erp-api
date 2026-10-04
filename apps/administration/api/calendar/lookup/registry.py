@@ -5,53 +5,17 @@ from apps.framework.lookup import (
 )
 
 from apps.administration.models import (
-    FiscalYear,
+    CalendarScope,
     Holiday,
-    PostingPeriod,
+    RosterCrew,
     WorkCalendar,
 )
 
 
-@register_lookup
-class FiscalYearLookup(BaseLookup):
-    name = "fiscal-years"
-    model = FiscalYear
-
-    search_fields = [
-        "code",
-        "name",
-    ]
-
-    filter_fields = [
-        "company_id",
-        "year",
-        "is_closed",
-    ]
-
-    ordering = [
-        "-year",
-    ]
-
-
-@register_lookup
-class PostingPeriodLookup(BaseLookup):
-    name = "posting-periods"
-    model = PostingPeriod
-
-    search_fields = [
-        "code",
-        "name",
-    ]
-
-    filter_fields = [
-        "fiscal_year_id",
-        "status",
-    ]
-
-    ordering = [
-        "start_date",
-    ]
-
+# Lookup `fiscal-years` dan `posting-periods` pindah ke Finance
+# (`apps/finance/api/lookup/registry.py`). Nama lookup bersifat
+# global di registry ini, jadi keduanya tidak boleh berdiri di dua
+# tempat sekaligus — yang terdaftar belakangan menang, diam-diam.
 
 @register_lookup
 class HolidayLookup(BaseLookup):
@@ -64,8 +28,9 @@ class HolidayLookup(BaseLookup):
     ]
 
     filter_fields = [
+        "scope",
         "company_id",
-        "site_id",
+        "location_id",
         "date",
         "is_national",
         "is_recurring",
@@ -76,109 +41,108 @@ class HolidayLookup(BaseLookup):
     ]
 
 
-# @register_lookup
-# class WorkCalendarLookup(BaseLookup):
-#     name = "work-calendars"
-#     model = WorkCalendar
-
-#     search_fields = [
-#         "code",
-#         "name",
-#     ]
-
-#     filter_fields = [
-#         "company_id",
-#         "site_id",
-#         "is_default",
-#     ]
-
-#     ordering = [
-#         "name",
-#     ]
 @register_lookup
-
 class WorkCalendarLookup(BaseLookup):
-
     name = "work-calendars"
-
     model = WorkCalendar
 
     search_fields = [
-
         "code",
-
         "name",
-
     ]
 
     filter_fields = [
-
+        "scope",
         "company_id",
-
     ]
 
     ordering = [
-
         "-is_default",
-
         "name",
-
     ]
 
     @classmethod
+    def apply_filters(cls, queryset, params):
+        """
+        Tanda tangannya `(queryset, params)`, bukan `(queryset, request)`
+        — `BaseLookupView` mengoper `request.query_params`. Versi
+        sebelumnya memanggil `request.query_params.get(...)` di sini,
+        sehingga endpoint ini selalu membalas 500.
+        """
+        company_id = params.get("company_id")
+        location_id = params.get("location_id")
 
-    def apply_filters(
+        if not company_id:
+            return queryset
 
-        cls,
-
-        queryset,
-
-        request,
-
-    ):
-
-        company_id = request.query_params.get(
-
-            "company_id",
-
+        # Yang ditawarkan: kalender company-nya sendiri **plus yang
+        # GLOBAL**.
+        #
+        # Kalender GLOBAL punya `company IS NULL`, jadi penyaring
+        # `company_id=` yang lugas justru membuangnya — dan dropdown
+        # override pegawai tidak akan pernah menawarkan `HO-STANDARD`,
+        # kalender yang paling banyak dipakai. Kegagalannya diam: yang
+        # memilihnya cuma melihat daftar yang lebih pendek, tanpa satu
+        # pun tanda bahwa ada yang disembunyikan.
+        condition = (
+            Q(scope=CalendarScope.GLOBAL)
+            | Q(scope=CalendarScope.COMPANY, company_id=company_id)
         )
 
-        site_id = request.query_params.get(
-
-            "site_id",
-
-        )
-
-        if company_id:
-
-            queryset = queryset.filter(
-
+        if location_id:
+            condition |= Q(
+                scope=CalendarScope.LOCATION,
                 company_id=company_id,
-
+                location_id=location_id,
             )
 
-        if site_id:
+        return queryset.filter(condition)
 
-            queryset = queryset.filter(
 
-                Q(site_id=site_id)
+@register_lookup
+class RosterCrewLookup(BaseLookup):
+    name = "roster-crews"
+    model = RosterCrew
 
-                | Q(
+    # Pola kerjanya ikut dibaca — lihat `serialize` di bawah. Tanpa
+    # select_related, satu halaman dropdown menembak satu query per
+    # baris hanya untuk mengambil nama polanya.
+    queryset = RosterCrew.objects.select_related("work_schedule")
 
-                    site__isnull=True,
+    search_fields = [
+        "code",
+        "name",
+    ]
 
-                    is_default=True,
+    filter_fields = [
+        "company_id",
+        "location_id",
+        "work_schedule_id",
+    ]
 
-                )
+    ordering = [
+        "code",
+    ]
 
-            )
+    @classmethod
+    def serialize(cls, instance):
+        """
+        Ikut membawa pola kerja milik crew.
 
-        else:
-
-            queryset = queryset.filter(
-
-                site__isnull=True,
-
-            )
-
-        return queryset
+        Dipakai `autofill` pada field Roster Crew di form Employee:
+        memilih crew langsung mengisi Work Schedule. Dua field itu
+        wajib sepakat — `EmploymentAssignment.clean()` menolak kalau
+        berbeda — jadi membiarkan pengguna menebak polanya hanya
+        menghasilkan penolakan saat Simpan, jauh dari tempat kesalahan
+        itu dibuat.
+        """
+        return {
+            "value": instance.pk,
+            "label": f"{instance.code} — {instance.name}",
+            "work_schedule": instance.work_schedule_id,
+            "work_schedule_name": (
+                instance.work_schedule.name
+                if instance.work_schedule_id
+                else None
+            ),
+        }

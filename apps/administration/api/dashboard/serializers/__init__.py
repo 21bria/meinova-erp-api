@@ -1,11 +1,19 @@
-from .widgets import DashboardWidgetSerializer
-from .layout import UserDashboardLayoutSerializer
-from .favorite_apps import FavoriteAppSerializer
-from .favorite_menus import FavoriteMenuSerializer
+from .favorite_apps import (
+    AppCatalogEntrySerializer,
+    FavoriteAppSelectionSerializer,
+    FavoriteAppSerializer,
+)
+from .favorite_menus import (
+    FavoriteMenuSelectionSerializer,
+    FavoriteMenuSerializer,
+    MenuCatalogEntrySerializer,
+)
 
 __all__ = [
-    "DashboardWidgetSerializer",
-    "UserDashboardLayoutSerializer",
+    "AppCatalogEntrySerializer",
+    "FavoriteAppSelectionSerializer",
     "FavoriteAppSerializer",
+    "FavoriteMenuSelectionSerializer",
     "FavoriteMenuSerializer",
+    "MenuCatalogEntrySerializer",
 ]

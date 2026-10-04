@@ -156,4 +156,11 @@ class BankBranchViewSet(BaseMasterViewSet):
     schema = bank_branch_schema("bank-branches")
 
     ordering = ["name"]
-    search_fields = ["code", "name", "branch_code", "swift_code"]
+    search_fields = [
+        "code",
+        "name",
+        "branch_code",
+        "city__name",
+        "bank__name",
+        "bank__swift_code",
+    ]

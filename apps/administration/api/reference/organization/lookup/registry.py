@@ -6,7 +6,8 @@ from apps.framework.lookup import (
 from apps.administration.models import (
     BranchType,
     CompanyType,
-    SiteType,
+    FacilityType,
+    LocationType,
 )
 
 
@@ -43,10 +44,10 @@ class CompanyTypeLookup(BaseLookup):
 
 
 @register_lookup
-class SiteTypeLookup(BaseLookup):
-    name = "site-types"
+class LocationTypeLookup(BaseLookup):
+    name = "location-types"
 
-    model = SiteType
+    model = LocationType
 
     search_fields = [
         "code",
@@ -56,3 +57,21 @@ class SiteTypeLookup(BaseLookup):
     ordering = [
         "code",
     ]
+
+
+@register_lookup
+class FacilityTypeLookup(BaseLookup):
+    name = "facility-types"
+
+    model = FacilityType
+
+    search_fields = [
+        "code",
+        "name",
+    ]
+
+    ordering = [
+        "sort_order",
+        "code",
+    ]
+

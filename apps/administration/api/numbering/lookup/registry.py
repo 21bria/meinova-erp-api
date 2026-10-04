@@ -24,6 +24,10 @@ class NumberingSequenceLookup(BaseLookup):
         "code",
     ]
 
+    # Konfigurasi penomoran milik satu perusahaan; alasannya sama dengan
+    # `fiscal-years`.
+    data_scope = {"company": "company"}
+
 
 @register_lookup
 class DocumentSeriesLookup(BaseLookup):

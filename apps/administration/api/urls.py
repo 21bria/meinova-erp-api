@@ -1,7 +1,14 @@
 from django.urls import include, path
 
 urlpatterns = [
+    # Dashboard *home*: katalog aplikasi, pintasan, tata letak per user.
     path("dashboard/", include("apps.administration.api.dashboard.urls")),
+
+    # Dashboard *modul* Administration, sejajar dengan `hr/dashboard`.
+    # Paketnya bernama `overview` supaya tidak tertukar dengan yang di
+    # atas; `framework_module`-nya tetap `administration/dashboard`.
+    path("overview/", include("apps.administration.api.overview.urls")),
+
     path("organization/", include("apps.administration.api.organization.urls")),
 
     path("security/", include("apps.administration.api.security.urls")),
@@ -11,7 +18,6 @@ urlpatterns = [
     path("numbering/", include("apps.administration.api.numbering.urls")),
     path("audit/", include("apps.administration.api.audit.urls")),
     path("settings/", include("apps.administration.api.settings.urls")),
-    path("workflow/", include("apps.administration.api.workflow.urls")),
 
     # references
     path("references/organization/", include("apps.administration.api.reference.organization.urls")),

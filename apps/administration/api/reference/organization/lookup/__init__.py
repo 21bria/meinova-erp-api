@@ -1,11 +1,11 @@
 from .registry import (
     BranchTypeLookup,
     CompanyTypeLookup,
-    SiteTypeLookup,
+    LocationTypeLookup,
 )
 
 __all__ = [
     "BranchTypeLookup",
     "CompanyTypeLookup",
-    "SiteTypeLookup",
+    "LocationTypeLookup",
 ]

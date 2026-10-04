@@ -15,11 +15,11 @@ class DivisionViewSet(BaseMasterViewSet):
         "code",
         "name",
         "company__name",
-        "site__name",
+        "location__name",
     ]
     filterset_fields = [
         "company",
-        "site",
+        "location",
         "is_active",
     ]
     schema = {
@@ -35,11 +35,12 @@ class DivisionViewSet(BaseMasterViewSet):
                 "placement": "quick",
                 "order": 10,
             },
-            "site": {
-                "lookup_endpoint": "/api/administration/organization/lookup/sites/",
-                  "depends_on": "company",
+            "location": {
+                "lookup_endpoint": "/api/administration/organization/lookup/locations/",
+                "depends_on": "company",
                 "lookup_params": {
                     "company_id": "$company",
+                    "branch_id": "$branch",
                 },
                 "required": True,
                 "placement": "quick",

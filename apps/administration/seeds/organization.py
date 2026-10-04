@@ -1,6 +1,28 @@
-from typing import TypeVar
+"""
+Penulis struktur organisasi — **mesinnya, bukan datanya**.
 
-from django.db import models
+Modul ini dulu memegang keduanya sekaligus: 800 baris logika tulis
+berdampingan dengan 12 perusahaan milik satu klien (`Source: Employee
+Database per August 2026.xlsx`). Karena ia duduk di jalur seed static
+(`seed_administration --only=organization`), **setiap** tenant baru —
+termasuk calon tenant produksi klien lain — ikut mendapat dua belas
+perusahaan yang bukan miliknya, lengkap dengan 460 department dan
+1.049 position.
+
+Sekarang datanya di luar:
+
+- `seeds/client/…`  struktur milik klien tertentu, dijalankan sadar
+- `seeds/demo/…`    tenant peragaan (trial & tutorial)
+
+Menambah tenant baru berarti menulis satu `OrganizationDataset` baru,
+bukan menyunting mesin ini.
+"""
+
+import re
+from dataclasses import dataclass, field
+from typing import Any, TypeVar
+
+from django.db import models, transaction
 
 from apps.administration.models.organization import (
     Branch,
@@ -8,9 +30,10 @@ from apps.administration.models.organization import (
     CostCenter,
     Department,
     Division,
+    Facility,
     Position,
     Section,
-    Site,
+    Location,
 )
 from apps.administration.models.references.geography import (
     City,
@@ -23,304 +46,75 @@ from apps.administration.models.references.hr import (
 )
 from apps.administration.models.references.organization import (
     CompanyType,
-    SiteType,
+    FacilityType,
+    LocationType,
 )
 
 from .base import seed_reference
+from .reference.organization import (
+    ORGANIZATION_REFERENCE_DATA,
+    retire_obsolete_location_types,
+)
 
 
 ModelT = TypeVar("ModelT", bound=models.Model)
 
 
-ORGANIZATION_REFERENCE_DATA = {
-    CompanyType: [
-        ("HO", "Head Office"),
-        ("SITE", "Site"),
-        ("SUB", "Subsidiary"),
-    ],
-    SiteType: [
-        ("MINE", "Mining Site"),
-        ("PORT", "Port"),
-        ("OFFICE", "Office"),
-    ],
-}
+# ============================================================
+# DATASET
+# ============================================================
+
+@dataclass(frozen=True)
+class OrganizationDataset:
+    """
+    Satu struktur organisasi utuh, siap ditulis.
+
+    Urutan fieldnya = urutan tulisnya, dan itu bukan kebetulan:
+    tiap tingkat menunjuk induknya lewat kode, jadi Section tidak bisa
+    ditulis sebelum Department ada. `facilities` boleh kosong — lokasi
+    yang tidak punya bangunan terdaftar adalah keadaan yang sah, dan
+    mengarang "Warehouse Default" untuk tiap company membuat master ini
+    terlihat terisi padahal tidak menunjuk bangunan mana pun.
+    """
+
+    name: str
+    companies: list[dict[str, Any]]
+    branches: list[dict[str, Any]]
+    locations: list[dict[str, Any]]
+    divisions: list[tuple]
+    departments: list[tuple]
+    sections: list[tuple]
+    positions: list[dict[str, Any]]
+    cost_centers: list[tuple]
+    facilities: list[dict[str, Any]] = field(default_factory=list)
 
 
-COMPANIES = [
-    {
-        "code": "MNV",
-        "name": "Meinova",
-        "legal_name": "PT Meinova Id",
-        "company_type": "HO",
-        "parent": None,
-        "tax_number": "",
-        "country": "ID",
-        "province": "DKI",
-        "city": "JKT",
-        "address": "Jakarta Selatan, Indonesia",
-        "postal_code": "12950",
-        "phone": "+62 21 5551000",
-        "email": "info@meinova.com",
-        "website": "https://meinova.com",
-    },
-    {
-        "code": "SUN",
-        "name": "Sigma Nusantara",
-        "legal_name": "PT Sigma Utama Nusantara",
-        "company_type": "SUB",
-        "parent": "MNV",
-        "tax_number": "",
-        "country": "ID",
-        "province": "DKI",
-        "city": "JKT",
-        "address": "Jakarta Selatan, Indonesia",
-        "postal_code": "12950",
-        "phone": "+62 21 5551001",
-        "email": "info@sun.co.id",
-        "website": "",
-    },
-    {
-        "code": "KAWI",
-        "name": "Karya Wijaya",
-        "legal_name": "PT Karya Wijaya",
-        "company_type": "SUB",
-        "parent": "MNV",
-        "tax_number": "",
-        "country": "ID",
-        "province": "DKI",
-        "city": "JKT",
-        "address": "Jakarta Selatan, Indonesia",
-        "postal_code": "12950",
-        "phone": "+62 21 5551002",
-        "email": "info@kawi.co.id",
-        "website": "",
-    },
-]
+# ============================================================
+# HELPERS
+# ============================================================
 
+def make_code(value: str) -> str:
+    value = value.upper().strip()
 
-BRANCHES = [
-    {
-        "company": "MNV",
-        "code": "JKT",
-        "name": "Jakarta Head Office",
-        "country": "ID",
-        "province": "DKI",
-        "city": "JKT",
-        "address": "Jakarta Selatan",
-        "postal_code": "12950",
-        "phone": "+62 21 5551000",
-        "email": "jakarta@meinova.com",
-        "website": "https://meinova.com",
-    },
-    {
-        "company": "SUN",
-        "code": "JKT",
-        "name": "SUN Jakarta Office",
-        "country": "ID",
-        "province": "DKI",
-        "city": "JKT",
-        "address": "Jakarta Selatan",
-        "postal_code": "12950",
-        "phone": "+62 21 5551001",
-        "email": "jakarta@sun.co.id",
-        "website": "",
-    },
-    {
-        "company": "KMI",
-        "code": "MOR",
-        "name": "Morowali Branch",
-        "country": "ID",
-        "province": None,
-        "city": None,
-        "address": "Morowali, Sulawesi Tengah",
-        "postal_code": "",
-        "phone": "",
-        "email": "morowali@kawi.co.id",
-        "website": "",
-    },
-]
+    value = value.replace("&", " AND ")
+    value = value.replace("/", " ")
+    value = value.replace(".", "")
+    value = value.replace("(", " ")
+    value = value.replace(")", " ")
+    value = value.replace("-", " ")
 
+    value = re.sub(
+        r"[^A-Z0-9]+",
+        "_",
+        value,
+    )
+    value = re.sub(
+        r"_+",
+        "_",
+        value,
+    )
 
-SITES = [
-    {
-        "company": "MNV",
-        "branch": "JKT",
-        "site_type": "OFFICE",
-        "code": "HO",
-        "name": "Meinova Head Office",
-        "country": "ID",
-        "province": "DKI",
-        "city": "JKT",
-        "address": "Jakarta Selatan",
-        "postal_code": "12950",
-    },
-    {
-        "company": "KMI",
-        "branch": "MOR",
-        "site_type": "MINE",
-        "code": "MINE01",
-        "name": "Morowali Mine",
-        "country": "ID",
-        "province": None,
-        "city": None,
-        "address": "Morowali, Sulawesi Tengah",
-        "postal_code": "",
-    },
-    {
-        "company": "KMI",
-        "branch": "MOR",
-        "site_type": "PORT",
-        "code": "PORT01",
-        "name": "Morowali Port",
-        "country": "ID",
-        "province": None,
-        "city": None,
-        "address": "Morowali, Sulawesi Tengah",
-        "postal_code": "",
-    },
-]
-
-
-# company, branch, site, code, name
-DIVISIONS = [
-    ("MNV", "JKT", "HO", "CORP", "Corporate Services"),
-    ("KMI", "MOR", "MINE01", "OPS", "Operations"),
-    ("KMI", "MOR", "MINE01", "TECH", "Technical Services"),
-]
-
-
-# company, branch, site, division, code, name
-DEPARTMENTS = [
-    ("MNV", "JKT", "HO", "CORP", "FIN", "Finance"),
-    ("MNV", "JKT", "HO", "CORP", "HR", "Human Resources"),
-    ("MNV", "JKT", "HO", "CORP", "IT", "Information Technology"),
-
-    ("KMI", "MOR", "MINE01", "OPS", "MINE", "Mining Operation"),
-    ("KMI", "MOR", "MINE01", "OPS", "PLANT", "Processing Plant"),
-    ("KMI", "MOR", "MINE01", "TECH", "ENG", "Engineering"),
-    ("KMI", "MOR", "MINE01", "TECH", "GEO", "Geology"),
-    ("KMI", "MOR", "MINE01", "TECH", "HSE", "Health Safety Environment"),
-]
-
-
-# company, branch, site, division, department, code, name
-SECTIONS = [
-    ("MNV", "JKT", "HO", "CORP", "FIN", "AP", "Accounts Payable"),
-    ("MNV", "JKT", "HO", "CORP", "FIN", "AR", "Accounts Receivable"),
-    ("MNV", "JKT", "HO", "CORP", "HR", "PAY", "Payroll"),
-    ("MNV", "JKT", "HO", "CORP", "HR", "REC", "Recruitment"),
-
-    ("KMI", "MOR", "MINE01", "OPS", "MINE", "PROD", "Production"),
-    ("KMI", "MOR", "MINE01", "OPS", "MINE", "DISP", "Dispatch"),
-    ("KMI", "MOR", "MINE01", "TECH", "GEO", "GC", "Grade Control"),
-]
-
-
-POSITIONS = [
-    {
-        "company": "MNV",
-        "branch": "JKT",
-        "site": "HO",
-        "division": "CORP",
-        "department": None,
-        "section": None,
-        "job_category": "MGMT",
-        "job_level": "DIR",
-        "code": "PRES-DIR",
-        "name": "President Director",
-        "headcount": 1,
-        "description": "",
-        "is_manager": True,
-        "reports_to": None,
-    },
-    {
-        "company": "MNV",
-        "branch": "JKT",
-        "site": "HO",
-        "division": "CORP",
-        "department": "HR",
-        "section": None,
-        "job_category": "MGMT",
-        "job_level": "MGR",
-        "code": "HR-MGR",
-        "name": "HR Manager",
-        "headcount": 1,
-        "description": "",
-        "is_manager": True,
-        "reports_to": "PRES-DIR",
-    },
-    {
-        "company": "MNV",
-        "branch": "JKT",
-        "site": "HO",
-        "division": "CORP",
-        "department": "HR",
-        "section": "PAY",
-        "job_category": "SUPPORT",
-        "job_level": "STAFF",
-        "code": "PAY-STAFF",
-        "name": "Payroll Staff",
-        "headcount": 3,
-        "description": "",
-        "is_manager": False,
-        "reports_to": "HR-MGR",
-    },
-    {
-        "company": "KMI",
-        "branch": "MOR",
-        "site": "MINE01",
-        "division": "OPS",
-        "department": "MINE",
-        "section": "PROD",
-        "job_category": "OPS",
-        "job_level": "SUP",
-        "code": "MINE-SUP",
-        "name": "Mine Production Supervisor",
-        "headcount": 4,
-        "description": "",
-        "is_manager": True,
-        "reports_to": None,
-    },
-    {
-        "company": "KMI",
-        "branch": "MOR",
-        "site": "MINE01",
-        "division": "OPS",
-        "department": "MINE",
-        "section": "PROD",
-        "job_category": "OPS",
-        "job_level": "STAFF",
-        "code": "MINE-OPR",
-        "name": "Mining Operator",
-        "headcount": 30,
-        "description": "",
-        "is_manager": False,
-        "reports_to": "MINE-SUP",
-    },
-]
-
-
-# company, branch, site, division, department, code, name
-COST_CENTERS = [
-    ("MNV", "JKT", "HO", "CORP", None, "1000", "Corporate"),
-    ("MNV", "JKT", "HO", "CORP", "FIN", "1100", "Finance"),
-    ("MNV", "JKT", "HO", "CORP", "HR", "1200", "Human Resources"),
-    ("MNV", "JKT", "HO", "CORP", "IT", "1300", "Information Technology"),
-
-    ("KMI", "MOR", "MINE01", "OPS", "MINE", "2000", "Mining Operation"),
-    ("KMI", "MOR", "MINE01", "TECH", "GEO", "2100", "Geology"),
-    ("KMI", "MOR", "MINE01", "OPS", "PLANT", "2200", "Processing Plant"),
-]
-
-
-def optional_by_code(
-    model: type[ModelT],
-    code: str | None,
-) -> ModelT | None:
-    if not code:
-        return None
-
-    return model.objects.filter(code=code).first()
+    return value.strip("_")
 
 
 def require_reference(
@@ -332,61 +126,121 @@ def require_reference(
 
     if value is None:
         raise RuntimeError(
-            f"{reference_name} with code '{code}' is not available. "
+            f"{reference_name} with code '{code}' "
+            "is not available. "
             "Run the required reference seed first."
         )
 
     return value
 
 
+def require_organization(
+    values: dict[tuple[str, str], ModelT],
+    company_code: str,
+    code: str,
+    reference_name: str,
+) -> ModelT:
+    value = values.get(
+        (
+            company_code,
+            code,
+        )
+    )
+
+    if value is None:
+        raise RuntimeError(
+            f"{reference_name} '{code}' "
+            f"was not found for company "
+            f"'{company_code}'."
+        )
+
+    return value
+
+
+
 def seed_organization_references() -> None:
-    for model, rows in ORGANIZATION_REFERENCE_DATA.items():
+    for (
+        model,
+        rows,
+    ) in ORGANIZATION_REFERENCE_DATA.items():
         seed_reference(
             model,
             [
                 {
                     "code": code,
                     "name": name,
+                    "sort_order": sort_order,
+                    "is_deleted": False,
+                    "is_active": True,
                 }
-                for code, name in rows
+                for code, name, sort_order in rows
             ],
         )
 
+    retire_obsolete_location_types()
 
-def seed_organization() -> None:
-    # Reference organisasi dijalankan otomatis terlebih dahulu.
+
+# ============================================================
+# ORGANIZATION SEED
+# ============================================================
+
+@transaction.atomic
+def seed_organization(dataset: OrganizationDataset) -> None:
+    """Tulis satu dataset organisasi ke tenant yang sedang aktif."""
     seed_organization_references()
+
+    # --------------------------------------------------------
+    # Geography References
+    # --------------------------------------------------------
+
+    country_codes = {
+        row["country"]
+        for row in (
+            dataset.companies
+            + dataset.branches
+            + dataset.locations
+        )
+        if row.get("country")
+    }
+
+    province_codes = {
+        row["province"]
+        for row in (
+            dataset.companies
+            + dataset.branches
+            + dataset.locations
+        )
+        if row.get("province")
+    }
+
+    city_codes = {
+        row["city"]
+        for row in (
+            dataset.companies
+            + dataset.branches
+            + dataset.locations
+        )
+        if row.get("city")
+    }
 
     countries = {
         item.code: item
         for item in Country.objects.filter(
-            code__in={
-                row["country"]
-                for row in COMPANIES + BRANCHES + SITES
-                if row.get("country")
-            },
+            code__in=country_codes
         )
     }
 
     provinces = {
         item.code: item
         for item in Province.objects.filter(
-            code__in={
-                row["province"]
-                for row in COMPANIES + BRANCHES + SITES
-                if row.get("province")
-            },
+            code__in=province_codes
         )
     }
 
     cities = {
         item.code: item
         for item in City.objects.filter(
-            code__in={
-                row["city"]
-                for row in COMPANIES + BRANCHES + SITES
-                if row.get("city")
-            },
+            code__in=city_codes
         )
     }
 
@@ -395,9 +249,9 @@ def seed_organization() -> None:
         for item in CompanyType.objects.all()
     }
 
-    site_types = {
+    location_types = {
         item.code: item
-        for item in SiteType.objects.all()
+        for item in LocationType.objects.all()
     }
 
     job_categories = {
@@ -410,10 +264,15 @@ def seed_organization() -> None:
         for item in JobLevel.objects.all()
     }
 
+    # --------------------------------------------------------
+    # Company
+    # --------------------------------------------------------
+
     companies: dict[str, Company] = {}
 
-    # Pass pertama: buat Company tanpa parent.
-    for row in COMPANIES:
+    # Pass 1:
+    # Create/update Company without parent.
+    for row in dataset.companies:
         company, _ = Company.objects.update_or_create(
             code=row["code"],
             defaults={
@@ -424,8 +283,13 @@ def seed_organization() -> None:
                     "CompanyType",
                 ),
                 "name": row["name"],
-                "legal_name": row["legal_name"],
-                "tax_number": row.get("tax_number", ""),
+                "legal_name": row[
+                    "legal_name"
+                ],
+                "tax_number": row.get(
+                    "tax_number",
+                    "",
+                ),
                 "country": (
                     require_reference(
                         countries,
@@ -435,34 +299,92 @@ def seed_organization() -> None:
                     if row.get("country")
                     else None
                 ),
-                "province": provinces.get(row.get("province")),
-                "city": cities.get(row.get("city")),
-                "address": row.get("address", ""),
-                "postal_code": row.get("postal_code", ""),
-                "phone": row.get("phone", ""),
-                "email": row.get("email", ""),
-                "website": row.get("website", ""),
+                "province": provinces.get(
+                    row.get("province")
+                ),
+                "city": cities.get(
+                    row.get("city")
+                ),
+                "address": row.get(
+                    "address",
+                    "",
+                ),
+                "postal_code": row.get(
+                    "postal_code",
+                    "",
+                ),
+                "phone": row.get(
+                    "phone",
+                    "",
+                ),
+                "email": row.get(
+                    "email",
+                    "",
+                ),
+                "website": row.get(
+                    "website",
+                    "",
+                ),
                 "is_active": True,
             },
         )
 
-        companies[row["code"]] = company
+        companies[
+            row["code"]
+        ] = company
 
-    # Pass kedua: isi parent Company.
-    for row in COMPANIES:
-        company = companies[row["code"]]
-        parent_code = row.get("parent")
-        parent = companies.get(parent_code) if parent_code else None
+    # Pass 2:
+    # Set Company parent.
+    for row in dataset.companies:
+        company = companies[
+            row["code"]
+        ]
 
-        if company.parent_id != getattr(parent, "id", None):
+        parent_code = row.get(
+            "parent"
+        )
+
+        parent = (
+            companies.get(
+                parent_code
+            )
+            if parent_code
+            else None
+        )
+
+        parent_id = getattr(
+            parent,
+            "id",
+            None,
+        )
+
+        if company.parent_id != parent_id:
             company.parent = parent
-            company.save(update_fields=["parent"])
+            company.save(
+                update_fields=[
+                    "parent",
+                ]
+            )
 
-    branches: dict[tuple[str, str], Branch] = {}
+    # --------------------------------------------------------
+    # Branch
+    # --------------------------------------------------------
 
-    for row in BRANCHES:
-        company_code = row["company"]
-        company = companies[company_code]
+    branches: dict[
+        tuple[str, str],
+        Branch,
+    ] = {}
+
+    for row in dataset.branches:
+        company_code = row[
+            "company"
+        ]
+
+        company = require_reference(
+            companies,
+            company_code,
+            "Company",
+        )
 
         branch, _ = Branch.objects.update_or_create(
             company=company,
@@ -478,36 +400,80 @@ def seed_organization() -> None:
                     if row.get("country")
                     else None
                 ),
-                "province": provinces.get(row.get("province")),
-                "city": cities.get(row.get("city")),
-                "address": row.get("address", ""),
-                "postal_code": row.get("postal_code", ""),
-                "phone": row.get("phone", ""),
-                "email": row.get("email", ""),
-                "website": row.get("website", ""),
+                "province": provinces.get(
+                    row.get("province")
+                ),
+                "city": cities.get(
+                    row.get("city")
+                ),
+                "address": row.get(
+                    "address",
+                    "",
+                ),
+                "postal_code": row.get(
+                    "postal_code",
+                    "",
+                ),
+                "phone": row.get(
+                    "phone",
+                    "",
+                ),
+                "email": row.get(
+                    "email",
+                    "",
+                ),
+                "website": row.get(
+                    "website",
+                    "",
+                ),
                 "is_active": True,
             },
         )
 
-        branches[(company_code, row["code"])] = branch
+        branches[
+            (
+                company_code,
+                row["code"],
+            )
+        ] = branch
 
-    sites: dict[tuple[str, str], Site] = {}
+    # --------------------------------------------------------
+    # Location
+    # --------------------------------------------------------
 
-    for row in SITES:
-        company_code = row["company"]
-        company = companies[company_code]
-        branch = branches[(company_code, row["branch"])]
+    locations: dict[
+        tuple[str, str],
+        Location,
+    ] = {}
 
-        site, _ = Site.objects.update_or_create(
+    for row in dataset.locations:
+        company_code = row[
+            "company"
+        ]
+
+        company = require_reference(
+            companies,
+            company_code,
+            "Company",
+        )
+
+        branch = require_organization(
+            branches,
+            company_code,
+            row["branch"],
+            "Branch",
+        )
+
+        location, _ = Location.objects.update_or_create(
             company=company,
             code=row["code"],
             defaults={
                 "branch": branch,
                 "name": row["name"],
-                "site_type": require_reference(
-                    site_types,
-                    row["site_type"],
-                    "SiteType",
+                "location_type": require_reference(
+                    location_types,
+                    row["location_type"],
+                    "LocationType",
                 ),
                 "country": (
                     require_reference(
@@ -518,117 +484,352 @@ def seed_organization() -> None:
                     if row.get("country")
                     else None
                 ),
-                "province": provinces.get(row.get("province")),
-                "city": cities.get(row.get("city")),
-                "address": row.get("address", ""),
-                "postal_code": row.get("postal_code", ""),
+                "province": provinces.get(
+                    row.get("province")
+                ),
+                "city": cities.get(
+                    row.get("city")
+                ),
+                "address": row.get(
+                    "address",
+                    "",
+                ),
+                "postal_code": row.get(
+                    "postal_code",
+                    "",
+                ),
                 "is_active": True,
             },
         )
 
-        sites[(company_code, row["code"])] = site
+        locations[
+            (
+                company_code,
+                row["code"],
+            )
+        ] = location
 
-    divisions: dict[tuple[str, str], Division] = {}
+    # --------------------------------------------------------
+    # Facility
+    # --------------------------------------------------------
 
-    for company_code, branch_code, site_code, code, name in DIVISIONS:
+    facility_types = {
+        item.code: item
+        for item in FacilityType.objects.all()
+    }
+
+    for row in dataset.facilities:
+        company_code = row["company"]
+
+        company = companies.get(company_code)
+
+        if company is None:
+            continue
+
+        # Dicari juga di basis data, bukan cuma di lokasi yang barusan
+        # dibuat seed ini: `GEBE` dan `JAKARTA HO` dibuat seed data uji,
+        # sementara seed ini hanya membuat lokasi DEFAULT per company.
+        # Tanpa jalur kedua ini seluruh daftar fasilitas dilewati tanpa
+        # suara, dan tabelnya kosong seolah datanya memang belum ada.
+        location = locations.get(
+            (company_code, row["location"]),
+        )
+
+        if location is None:
+            location = Location.objects.filter(
+                company=company,
+                code=row["location"],
+                is_deleted=False,
+            ).first()
+
+        # Lokasinya memang belum ada di tenant ini — tenant lain tidak
+        # punya Gebe, dan itu keadaan yang sah.
+        if location is None:
+            continue
+
+        Facility.objects.update_or_create(
+            company=company,
+            code=row["code"],
+            defaults={
+                "branch": location.branch,
+                "location": location,
+                "facility_type": require_reference(
+                    facility_types,
+                    row["facility_type"],
+                    "FacilityType",
+                ),
+                "name": row["name"],
+                "description": row.get("description", ""),
+                "is_active": True,
+                "is_deleted": False,
+            },
+        )
+
+    # --------------------------------------------------------
+    # Division
+    # --------------------------------------------------------
+
+    divisions: dict[
+        tuple[str, str],
+        Division,
+    ] = {}
+
+    for (
+        company_code,
+        branch_code,
+        location_code,
+        code,
+        name,
+    ) in dataset.divisions:
+        company = require_reference(
+            companies,
+            company_code,
+            "Company",
+        )
+
+        branch = require_organization(
+            branches,
+            company_code,
+            branch_code,
+            "Branch",
+        )
+
+        location = require_organization(
+            locations,
+            company_code,
+            location_code,
+            "Location",
+        )
+
         division, _ = Division.objects.update_or_create(
-            company=companies[company_code],
+            company=company,
             code=code,
             defaults={
-                "branch": branches[(company_code, branch_code)],
-                "site": sites[(company_code, site_code)],
+                "branch": branch,
+                "location": location,
                 "name": name,
                 "is_active": True,
             },
         )
 
-        divisions[(company_code, code)] = division
+        divisions[
+            (
+                company_code,
+                code,
+            )
+        ] = division
 
-    departments: dict[tuple[str, str], Department] = {}
+    # --------------------------------------------------------
+    # Department
+    # --------------------------------------------------------
+
+    departments: dict[
+        tuple[str, str],
+        Department,
+    ] = {}
 
     for (
         company_code,
         branch_code,
-        site_code,
+        location_code,
         division_code,
         code,
         name,
-    ) in DEPARTMENTS:
-        department, _ = Department.objects.update_or_create(
-            company=companies[company_code],
-            code=code,
-            defaults={
-                "branch": branches[(company_code, branch_code)],
-                "site": sites[(company_code, site_code)],
-                "division": divisions[(company_code, division_code)],
-                "name": name,
-                "is_active": True,
-            },
+    ) in dataset.departments:
+        company = require_reference(
+            companies,
+            company_code,
+            "Company",
         )
 
-        departments[(company_code, code)] = department
+        branch = require_organization(
+            branches,
+            company_code,
+            branch_code,
+            "Branch",
+        )
 
-    sections: dict[tuple[str, str], Section] = {}
+        location = require_organization(
+            locations,
+            company_code,
+            location_code,
+            "Location",
+        )
+
+        division = require_organization(
+            divisions,
+            company_code,
+            division_code,
+            "Division",
+        )
+
+        department, _ = (
+            Department.objects.update_or_create(
+                company=company,
+                code=code,
+                defaults={
+                    "branch": branch,
+                    "location": location,
+                    "division": division,
+                    "name": name,
+                    "is_active": True,
+                },
+            )
+        )
+
+        departments[
+            (
+                company_code,
+                code,
+            )
+        ] = department
+
+    # --------------------------------------------------------
+    # Section
+    # --------------------------------------------------------
+
+    sections: dict[
+        tuple[str, str],
+        Section,
+    ] = {}
 
     for (
         company_code,
         branch_code,
-        site_code,
+        location_code,
         division_code,
         department_code,
         code,
         name,
-    ) in SECTIONS:
+    ) in dataset.sections:
+        company = require_reference(
+            companies,
+            company_code,
+            "Company",
+        )
+
+        branch = require_organization(
+            branches,
+            company_code,
+            branch_code,
+            "Branch",
+        )
+
+        location = require_organization(
+            locations,
+            company_code,
+            location_code,
+            "Location",
+        )
+
+        division = require_organization(
+            divisions,
+            company_code,
+            division_code,
+            "Division",
+        )
+
+        department = require_organization(
+            departments,
+            company_code,
+            department_code,
+            "Department",
+        )
+
         section, _ = Section.objects.update_or_create(
-            company=companies[company_code],
+            company=company,
             code=code,
             defaults={
-                "branch": branches[(company_code, branch_code)],
-                "site": sites[(company_code, site_code)],
-                "division": divisions[(company_code, division_code)],
-                "department": departments[
-                    (company_code, department_code)
-                ],
+                "branch": branch,
+                "location": location,
+                "division": division,
+                "department": department,
                 "name": name,
                 "is_active": True,
             },
         )
 
-        sections[(company_code, code)] = section
+        sections[
+            (
+                company_code,
+                code,
+            )
+        ] = section
 
-    positions: dict[tuple[str, str], Position] = {}
+    # --------------------------------------------------------
+    # Position
+    # --------------------------------------------------------
 
-    # Pass pertama: buat Position tanpa reports_to.
-    for row in POSITIONS:
-        company_code = row["company"]
+    positions: dict[
+        tuple[str, str],
+        Position,
+    ] = {}
+
+    # Pass 1:
+    # Create Position without reports_to.
+    for row in dataset.positions:
+        company_code = row[
+            "company"
+        ]
+
+        company = require_reference(
+            companies,
+            company_code,
+            "Company",
+        )
+
+        branch = require_organization(
+            branches,
+            company_code,
+            row["branch"],
+            "Branch",
+        )
+
+        location = require_organization(
+            locations,
+            company_code,
+            row["location"],
+            "Location",
+        )
+
+        division = require_organization(
+            divisions,
+            company_code,
+            row["division"],
+            "Division",
+        )
+
+        department = (
+            require_organization(
+                departments,
+                company_code,
+                row["department"],
+                "Department",
+            )
+            if row.get("department")
+            else None
+        )
+
+        section = (
+            require_organization(
+                sections,
+                company_code,
+                row["section"],
+                "Section",
+            )
+            if row.get("section")
+            else None
+        )
 
         position, _ = Position.objects.update_or_create(
-            company=companies[company_code],
+            company=company,
             code=row["code"],
             defaults={
-                "branch": branches[
-                    (company_code, row["branch"])
-                ],
-                "site": sites[
-                    (company_code, row["site"])
-                ],
-                "division": divisions[
-                    (company_code, row["division"])
-                ],
-                "department": (
-                    departments.get(
-                        (company_code, row["department"])
-                    )
-                    if row.get("department")
-                    else None
-                ),
-                "section": (
-                    sections.get(
-                        (company_code, row["section"])
-                    )
-                    if row.get("section")
-                    else None
-                ),
+                "branch": branch,
+                "location": location,
+                "division": division,
+                "department": department,
+                "section": section,
                 "job_category": require_reference(
                     job_categories,
                     row["job_category"],
@@ -641,61 +842,127 @@ def seed_organization() -> None:
                 ),
                 "reports_to": None,
                 "name": row["name"],
-                "headcount": row.get("headcount", 1),
-                "description": row.get("description", ""),
-                "is_manager": row.get("is_manager", False),
+                "headcount": row.get(
+                    "headcount",
+                    1,
+                ),
+                "description": row.get(
+                    "description",
+                    "",
+                ),
+                "is_manager": row.get(
+                    "is_manager",
+                    False,
+                ),
                 "is_active": True,
             },
         )
 
-        positions[(company_code, row["code"])] = position
+        positions[
+            (
+                company_code,
+                row["code"],
+            )
+        ] = position
 
-    # Pass kedua: isi reports_to.
-    for row in POSITIONS:
-        manager_code = row.get("reports_to")
+    # Pass 2:
+    # Set reports_to.
+    for row in dataset.positions:
+        manager_code = row.get(
+            "reports_to"
+        )
 
         if not manager_code:
             continue
 
-        key = (row["company"], row["code"])
-        manager_key = (row["company"], manager_code)
+        company_code = row[
+            "company"
+        ]
 
-        position = positions[key]
-        manager = positions.get(manager_key)
+        position = require_organization(
+            positions,
+            company_code,
+            row["code"],
+            "Position",
+        )
 
-        if manager is None:
-            raise RuntimeError(
-                f"Position manager '{manager_code}' was not found "
-                f"for company '{row['company']}'."
+        manager = require_organization(
+            positions,
+            company_code,
+            manager_code,
+            "Position Manager",
+        )
+
+        if (
+            position.reports_to_id
+            != manager.id
+        ):
+            position.reports_to = manager
+            position.save(
+                update_fields=[
+                    "reports_to",
+                ]
             )
 
-        if position.reports_to_id != manager.id:
-            position.reports_to = manager
-            position.save(update_fields=["reports_to"])
+    # --------------------------------------------------------
+    # Cost Center
+    # --------------------------------------------------------
 
     for (
         company_code,
         branch_code,
-        site_code,
+        location_code,
         division_code,
         department_code,
         code,
         name,
-    ) in COST_CENTERS:
+    ) in dataset.cost_centers:
+        company = require_reference(
+            companies,
+            company_code,
+            "Company",
+        )
+
+        branch = require_organization(
+            branches,
+            company_code,
+            branch_code,
+            "Branch",
+        )
+
+        location = require_organization(
+            locations,
+            company_code,
+            location_code,
+            "Location",
+        )
+
+        division = require_organization(
+            divisions,
+            company_code,
+            division_code,
+            "Division",
+        )
+
+        department = (
+            require_organization(
+                departments,
+                company_code,
+                department_code,
+                "Department",
+            )
+            if department_code
+            else None
+        )
+
         CostCenter.objects.update_or_create(
-            company=companies[company_code],
+            company=company,
             code=code,
             defaults={
-                "branch": branches[(company_code, branch_code)],
-                "site": sites[(company_code, site_code)],
-                "division": divisions[(company_code, division_code)],
-                "department": (
-                    departments.get(
-                        (company_code, department_code)
-                    )
-                    if department_code
-                    else None
-                ),
+                "branch": branch,
+                "location": location,
+                "division": division,
+                "department": department,
                 "name": name,
                 "is_active": True,
             },

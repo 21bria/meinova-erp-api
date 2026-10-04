@@ -34,6 +34,7 @@ from apps.administration.models.references.hr import (
     #  Leave References
     # -------------------------------------------------------------------------
     LeaveType,
+    RotationPurpose,
     LeaveReason,
     AttendanceStatus,
     OvertimeType,
@@ -90,6 +91,13 @@ from apps.administration.models.references.hr import (
     # --------------------------------------------------------------------------
     TrainingCategory,
     TrainingProvider,
+
+    # -------------------------------------------------------------------------
+    # Site Rotation References
+    # -------------------------------------------------------------------------
+    TransportMode,
+    AccommodationType,
+
 )
 
 
@@ -177,9 +185,27 @@ class ProbationTypeSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 class EmployeeGroupSerializer(serializers.ModelSerializer):
+    # Dokumen perjalanan yang berlaku — turunan `field_break_applicable` +
+    # `business_trip_applicable` (TR/BT POLICY-1), dihitung, tidak
+    # disimpan: `travel_request` / `business_trip` / `both` / `none`.
+    travel_document = serializers.SerializerMethodField()
+
+    # Peringatan, bukan penolakan: `both` dan `none` tetap boleh disimpan.
+    travel_document_warnings = serializers.SerializerMethodField()
+
     class Meta:
         model = EmployeeGroup
         fields = "__all__"
+
+    def get_travel_document(self, obj) -> str:
+        from apps.hr.applicability import group_travel_document
+
+        return group_travel_document(obj)
+
+    def get_travel_document_warnings(self, obj) -> list[dict]:
+        from apps.hr.applicability import travel_document_warnings
+
+        return travel_document_warnings(obj)
 
 
 class JobCategorySerializer(serializers.ModelSerializer):
@@ -214,6 +240,19 @@ class LeaveTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = LeaveType
         fields = "__all__"
+
+
+class RotationPurposeSerializer(serializers.ModelSerializer):
+    leave_type_name = serializers.CharField(
+        source="leave_type.name",
+        read_only=True,
+        default=None,
+    )
+
+    class Meta:
+        model = RotationPurpose
+        fields = "__all__"
+        read_only_fields = ["leave_type_name"]
 
 
 class LeaveReasonSerializer(serializers.ModelSerializer):
@@ -415,4 +454,42 @@ class TrainingCategorySerializer(serializers.ModelSerializer):
 class TrainingProviderSerializer(serializers.ModelSerializer):
     class Meta:
         model = TrainingProvider
+        fields = "__all__"
+
+
+# -----------------------------------------------------------------------------
+# Site Rotation
+# -----------------------------------------------------------------------------
+
+class TransportModeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TransportMode
+        fields = "__all__"
+
+
+class AccommodationTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AccommodationType
+        fields = "__all__"
+
+# Visitor Management — master baru, berkas modelnya sendiri.
+from apps.administration.models.references.visitor import (
+    VisitPurpose,
+    VisitType,
+)
+
+
+# -----------------------------------------------------------------------------
+# Visitor Management
+# -----------------------------------------------------------------------------
+
+class VisitPurposeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VisitPurpose
+        fields = "__all__"
+
+
+class VisitTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VisitType
         fields = "__all__"

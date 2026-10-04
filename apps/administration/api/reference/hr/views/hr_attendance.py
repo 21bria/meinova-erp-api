@@ -205,6 +205,21 @@ class WorkScheduleViewSet(BaseMasterViewSet):
 
 
 class WorkScheduleDayViewSet(BaseMasterViewSet):
+    search_fields = [
+        "work_schedule__code",
+        "work_schedule__name",
+        "shift__code",
+        "shift__name",
+    ]
+
+    # `BaseMasterViewSet.ordering` bawaannya `["name"]`, dan model ini
+    # tidak punya kolom itu — ia baris hari, bukan master bernama. Tanpa
+    # ditimpa, **setiap** permintaan daftar dibalas 500 berbunyi "Cannot
+    # resolve keyword 'name'". Jebakan yang sebentuk dengan
+    # `search_fields`, cuma jalur gagalnya berbeda: pencarian sudah
+    # dijaring `SafeSearchFilter`, pengurutan tidak.
+    ordering = ["work_schedule__code", "weekday"]
+
     serializer_class = WorkScheduleDaySerializer
     service_class = WorkScheduleDayService
 

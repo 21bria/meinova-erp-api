@@ -30,6 +30,20 @@ class NumberingSequence(BaseModel):
 
     padding = models.PositiveSmallIntegerField(default=5)
 
+    # Berapa digit tahun yang ikut dicetak. Empat itu bawaan dan itu
+    # yang dipakai seluruh deret dokumen yang sudah ada
+    # (TR-2026-00001). Dua dibutuhkan nomor pegawai, yang formatnya
+    # menempel tanpa pemisah: KW260001.
+    #
+    # Ditaruh di master penomoran, bukan di kode modul HR: formatnya jadi
+    # bisa diubah dari layar setting seperti pola lain, dan modul
+    # berikutnya yang butuh tahun dua digit tidak perlu menulis
+    # formatternya sendiri.
+    year_digits = models.PositiveSmallIntegerField(
+        default=4,
+        choices=[(2, "2 digit (26)"), (4, "4 digit (2026)")],
+    )
+
     current_number = models.PositiveIntegerField(default=0)
 
     reset_yearly = models.BooleanField(default=True)
